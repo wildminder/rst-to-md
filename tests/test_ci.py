@@ -92,3 +92,19 @@ def test_python_version_sources_consistent():
     assert ruff and mypy
     assert f"{ruff.group(1)}.{ruff.group(2)}" == minimum
     assert f"{mypy.group(1)}.{mypy.group(2)}" == minimum
+
+
+def test_coverage_floor_configured():
+    """NTH-008: a coverage floor must be configured so accidental coverage
+    loss fails the run. The floor must be a sane percentage and must not be
+    silently disabled (fail_under = 0 would be a no-op)."""
+    import re
+
+    text = (REPO_ROOT / "pyproject.toml").read_text("utf-8")
+    m = re.search(r"fail_under\s*=\s*(\d+)", text)
+    assert m, "fail_under not configured in pyproject.toml"
+    floor = int(m.group(1))
+    assert 0 < floor <= 100, f"fail_under={floor} is not a sane percentage"
+    # The floor must live under [tool.coverage.report] (regex parse, no
+    # tomllib needed, consistent with the other guards in this module).
+    assert "[tool.coverage.report]" in text

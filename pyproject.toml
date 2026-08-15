@@ -74,6 +74,12 @@ addopts = "-ra"
 source = ["rst_to_md"]
 omit = ["tests/*"]
 
+[tool.coverage.report]
+# NTH-008: coverage floor. Baseline measured 2026-08-15 at 69%; the floor is
+# set one point below so accidental coverage loss fails CI/local runs while
+# normal development stays green. Ratchet upward as coverage improves.
+fail_under = 68
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
