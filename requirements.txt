@@ -1,0 +1,11 @@
+pypandoc>=1.7
+pypandoc-binary>=1.7
+sphinx>=6.0
+html-to-markdown
+beautifulsoup4>=4.12
+
+# Dev tools (also available via `pip install -e ".[dev]"`)
+pytest>=7.0
+pytest-cov>=4.0
+ruff>=0.4
+mypy>=1.8
