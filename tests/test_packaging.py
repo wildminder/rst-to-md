@@ -28,10 +28,12 @@ def test_pyproject_parses():
     assert data["project"]["name"] == "rst-to-md"
     deps = data["project"]["dependencies"]
     assert isinstance(deps, list)
-    # 4 runtime deps: pypandoc-binary, sphinx, html-to-markdown, beautifulsoup4.
+    # 5 runtime deps: pypandoc-binary, sphinx, html-to-markdown, beautifulsoup4,
+    # tabulate (required by the vendored markdown builder).
     # sphinx-markdown-builder is VENDORED (rst_to_md/_vendor), not a PyPI dep.
-    assert len(deps) == 4
+    assert len(deps) == 5
     assert any("beautifulsoup4" in d for d in deps)
+    assert any("tabulate" in d for d in deps)
     assert not any("sphinx-markdown-builder" in d for d in deps)
     # The vendored builder must be present in the tree.
     vendored = REPO_ROOT / "rst_to_md" / "_vendor" / "sphinx_markdown_builder"
