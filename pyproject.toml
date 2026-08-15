@@ -44,6 +44,9 @@ dev = [
     "mypy>=1.8",
     "build>=1.0",
     "pyyaml>=6.0",
+    # Test fixture theme (tests/fixtures/sphinx_autodoc reproduces the aiogram
+    # furo markup); not a runtime dependency.
+    "furo",
 ]
 
 [project.scripts]

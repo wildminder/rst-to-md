@@ -1366,7 +1366,16 @@ def test_napoleon_skip_member_crash_does_not_abort_build(tmp_path: Path):
 
 
 def test_napoleon_skip_member_crash_without_patch_aborts_build(tmp_path: Path):
-    """Regression guard: without the patch the same fixture aborts the build."""
+    """Regression guard: without the patch the same fixture aborts the build.
+
+    The unguarded ``__qualname__`` access in napoleon's ``_skip_member`` only
+    aborts the build on Sphinx >= 9 (older versions swallow the exception), so
+    the crash cannot be reproduced there and the guard is skipped.
+    """
+    import sphinx
+
+    if sphinx.version_info < (9,):
+        pytest.skip("napoleon _skip_member crash only reproduces on Sphinx >= 9")
     build_dir = tmp_path / "build"
     with pytest.raises(SphinxBuildError):
         build_sphinx_html(_FIXTURE_NAPOLEON, build_dir, lightweight=False)
