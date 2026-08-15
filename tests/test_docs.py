@@ -145,3 +145,16 @@ def test_docs_mention_autosummary_cli_flag():
     # WS2: the --autosummary-generate CLI flag must be documented in the README.
     readme = (REPO_ROOT / "README.md").read_text("utf-8")
     assert "--autosummary-generate" in readme
+
+
+def test_readme_badge_matches_requires_python():
+    """IMP-006: the README Python badge must advertise the same minimum as
+    requires-python in pyproject.toml."""
+    import re
+
+    text = (REPO_ROOT / "pyproject.toml").read_text("utf-8")
+    m = re.search(r'requires-python\s*=\s*">=(\d+\.\d+)"', text)
+    assert m, "requires-python not found in pyproject.toml"
+    minimum = m.group(1)
+    readme = (REPO_ROOT / "README.md").read_text("utf-8")
+    assert f"python-{minimum}%2B" in readme, f"README badge must advertise python-{minimum}+"

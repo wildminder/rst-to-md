@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/wildminder/rst-to-md/actions/workflows/ci.yml/badge.svg)](https://github.com/wildminder/rst-to-md/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 
 A command-line tool to convert reStructuredText (`.rst`) files and full Sphinx
 documentation projects to clean Markdown (`.md`).

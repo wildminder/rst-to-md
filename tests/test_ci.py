@@ -49,3 +49,46 @@ def test_ruff_mypy_version_aligned():
     assert ruff_version == mypy_version, (
         f"ruff target-version py{ruff_full} ({ruff_version}) != mypy python_version {mypy_version}"
     )
+
+
+def _minimum_python_from_requires(text: str) -> str:
+    import re
+
+    m = re.search(r'requires-python\s*=\s*">=(\d+)\.(\d+)"', text)
+    assert m, "requires-python not found in pyproject.toml"
+    return f"{m.group(1)}.{m.group(2)}"
+
+
+def test_python_version_sources_consistent():
+    """IMP-006: requires-python, trove classifiers, the CI matrix, and the
+    ruff/mypy tooling targets must all agree on the minimum Python version."""
+    import re
+
+    text = (REPO_ROOT / "pyproject.toml").read_text("utf-8")
+    minimum = _minimum_python_from_requires(text)  # e.g. "3.10"
+    major, minor = minimum.split(".")
+
+    # 1. Classifiers: no classifier below the minimum; the minimum is present.
+    classifier_versions = re.findall(r'"Programming Language :: Python :: (\d+\.\d+)"', text)
+    assert classifier_versions, "no Python version classifiers found"
+    assert minimum in classifier_versions
+    for v in classifier_versions:
+        assert tuple(map(int, v.split("."))) >= (int(major), int(minor)), (
+            f"classifier {v} is below requires-python {minimum}"
+        )
+
+    # 2. CI matrix: no leg below the minimum; the minimum is tested.
+    ci = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text("utf-8"))
+    matrix = ci["jobs"]["lint-type-test"]["strategy"]["matrix"]["python-version"]
+    assert minimum in matrix
+    for leg in matrix:
+        assert tuple(map(int, str(leg).split("."))) >= (int(major), int(minor)), (
+            f"CI leg {leg} is below requires-python {minimum}"
+        )
+
+    # 3. Tooling targets equal the minimum (extends NTH-005's ruff==mypy rule).
+    ruff = re.search(r'target-version\s*=\s*"py(\d)(\d+)"', text)
+    mypy = re.search(r'python_version\s*=\s*"(\d+)\.(\d+)"', text)
+    assert ruff and mypy
+    assert f"{ruff.group(1)}.{ruff.group(2)}" == minimum
+    assert f"{mypy.group(1)}.{mypy.group(2)}" == minimum
