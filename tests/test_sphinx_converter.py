@@ -1871,8 +1871,10 @@ def _sample_pkg_source_map(tmp_path: Path) -> dict:
 
 
 def test_convert_built_md_enriches_autosummary(tmp_path: Path):
-    """convert_built_md fills empty autosummary cells + writes stub pages when a
-    source map is supplied (the direct Markdown builder path)."""
+    """convert_built_md fills empty autosummary cells when a source map is
+    supplied (the direct Markdown builder path). IMP-007: the per-file call
+    enriches tables only — generated/ stubs are written once by the project
+    converter, so none must appear here."""
     source_map = _sample_pkg_source_map(tmp_path)
 
     src_rst = tmp_path / "page.rst"
@@ -1895,7 +1897,8 @@ def test_convert_built_md_enriches_autosummary(tmp_path: Path):
     text = out_md.read_text(encoding="utf-8")
     assert "Beat tracker." in text
     assert "[`beat_track`](generated/sample_pkg.beat_track.md" in text
-    assert (out_dir / "generated" / "sample_pkg.beat_track.md").is_file()
+    # IMP-007: no per-file stub writes.
+    assert not (out_dir / "generated").exists()
 
 
 def test_convert_built_md_no_source_map_is_passthrough(tmp_path: Path):
@@ -1916,8 +1919,10 @@ def test_convert_built_md_no_source_map_is_passthrough(tmp_path: Path):
 
 
 def test_convert_html_to_md_enriches_autosummary(tmp_path: Path):
-    """convert_html_to_md fills empty autosummary cells + writes stub pages when
-    a source map is supplied (the legacy html builder path)."""
+    """convert_html_to_md fills empty autosummary cells when a source map is
+    supplied (the legacy html builder path). IMP-007: the per-file call
+    enriches tables only — generated/ stubs are written once by the project
+    converter, so none must appear here."""
     source_map = _sample_pkg_source_map(tmp_path)
 
     src_rst = tmp_path / "page.rst"
@@ -1942,7 +1947,8 @@ def test_convert_html_to_md_enriches_autosummary(tmp_path: Path):
     assert ok is True
     text = out_md.read_text(encoding="utf-8")
     assert "Beat tracker." in text
-    assert (out_dir / "generated" / "sample_pkg.beat_track.md").is_file()
+    # IMP-007: no per-file stub writes.
+    assert not (out_dir / "generated").exists()
 
 
 def test_convert_sphinx_project_enriches_autosummary(
@@ -1983,6 +1989,70 @@ def test_convert_sphinx_project_writes_generated_stubs(
     # AST-derived all-optional signature.
     assert "(*[, y, sr, onset_envelope])" in content
     assert "Dynamic programming beat tracker." in content
+
+
+def test_convert_sphinx_project_writes_stubs_once(
+    sphinx_md_autosummary_project: Path, tmp_path: Path, monkeypatch
+):
+    """IMP-007: generated/ stubs are written exactly once per project run,
+    regardless of --workers, and never from the per-file enrich path."""
+    from rst_to_md.converters import sphinx as sphinx_mod
+
+    calls: list = []
+    real_write = sphinx_mod.write_generated_stubs
+
+    def spy(base_dir, source_map):
+        calls.append(Path(base_dir))
+        return real_write(base_dir, source_map)
+
+    monkeypatch.setattr(sphinx_mod, "write_generated_stubs", spy)
+    out = tmp_path / "out"
+    ok, err, skip = sphinx_mod.convert_sphinx_project(
+        sphinx_md_autosummary_project,
+        out,
+        builder="markdown",
+        max_workers=4,
+        show_progress=False,
+    )
+    assert err == 0
+    assert ok >= 1
+    assert calls == [out], f"expected exactly one stub write to {out}, got {calls}"
+    assert (out / "generated" / "sample_pkg.beat_track.md").is_file()
+    assert (out / "generated" / "sample_pkg.plp.md").is_file()
+
+
+def test_convert_sphinx_project_parallel_stub_integrity(
+    sphinx_md_autosummary_project: Path, tmp_path: Path
+):
+    """IMP-007: with --workers 4 the output (pages + generated stubs) must be
+    byte-identical to a serial run — no interleaved/corrupt writes."""
+    out_serial = tmp_path / "serial"
+    out_parallel = tmp_path / "parallel"
+    r1 = convert_sphinx_project(
+        sphinx_md_autosummary_project,
+        out_serial,
+        builder="markdown",
+        max_workers=1,
+        show_progress=False,
+    )
+    r2 = convert_sphinx_project(
+        sphinx_md_autosummary_project,
+        out_parallel,
+        builder="markdown",
+        max_workers=4,
+        show_progress=False,
+    )
+    assert r1[1] == 0 and r2[1] == 0
+
+    def snapshot(root: Path) -> dict:
+        return {str(p.relative_to(root)): p.read_bytes() for p in sorted(root.rglob("*.md"))}
+
+    assert snapshot(out_serial) == snapshot(out_parallel)
+    gen = out_parallel / "generated"
+    assert gen.is_dir()
+    for stub in gen.glob("*.md"):
+        text = stub.read_text(encoding="utf-8")
+        assert text.startswith("# "), f"corrupt stub {stub}"
 
 
 # --------------------------------------------------------------------------- #

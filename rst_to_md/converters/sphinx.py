@@ -45,7 +45,7 @@ from ..config import (
     SKIP_STEMS,
 )
 from ..core import is_up_to_date
-from ..core.autosummary_enrich import enrich_file
+from ..core.autosummary_enrich import enrich_file, write_generated_stubs
 from ..core.html_clean import (
     clean_sphinx_html,
     normalize_autodoc_html,
@@ -959,7 +959,8 @@ def convert_html_to_md(
     After the shared post-processing, when ``source_map`` is provided the
     autosummary tables are enriched from source (:func:`enrich_file`) so empty
     stub cells gain signatures and summaries without importing the documented
-    package.
+    package. The ``generated/`` stub pages are NOT written here — the project
+    converter writes them exactly once, outside the parallel loop (IMP-007).
     """
     try:
         html_content = html_path.read_text(encoding="utf-8", errors="ignore")
@@ -978,7 +979,9 @@ def convert_html_to_md(
         md_path.parent.mkdir(parents=True, exist_ok=True)
         md_path.write_text(md_content, encoding="utf-8")
         if source_map:
-            enrich_file(md_path, src_rst, source_map, output_dir=output_dir)
+            # IMP-007: tables only — generated/ stubs are written once by
+            # convert_sphinx_project, outside the parallel loop.
+            enrich_file(md_path, src_rst, source_map, output_dir=output_dir, write_stubs=False)
         return True
     except Exception as exc:  # noqa: BLE001 - conversion failures are non-fatal
         if not show_progress:
@@ -1010,7 +1013,9 @@ def convert_built_md(
 
     When ``source_map`` is provided, the autosummary tables are enriched from
     source (:func:`enrich_file`) so empty stub cells gain signatures and
-    summaries without importing the documented package.
+    summaries without importing the documented package. The ``generated/``
+    stub pages are NOT written here — the project converter writes them
+    exactly once, outside the parallel loop (IMP-007).
     """
     try:
         content = md_path.read_text(encoding="utf-8")
@@ -1020,7 +1025,9 @@ def convert_built_md(
         if not show_progress:
             logger.info("[OK] %s -> %s", md_path, out_path)
         if source_map:
-            enrich_file(out_path, src_rst, source_map, output_dir=output_dir)
+            # IMP-007: tables only — generated/ stubs are written once by
+            # convert_sphinx_project, outside the parallel loop.
+            enrich_file(out_path, src_rst, source_map, output_dir=output_dir, write_stubs=False)
         return True
     except Exception as exc:  # noqa: BLE001 - conversion failures are non-fatal
         if not show_progress:
@@ -1091,6 +1098,11 @@ def convert_sphinx_project(
          dominant cost), unlike ``max_workers`` which only parallelizes the
          post-build conversion.
       * ``show_progress`` — live progress bar on TTY (auto when ``None``).
+
+    Autosummary ``generated/`` stub pages are written exactly once, in the
+    single-threaded section right after the source map is built and before the
+    (possibly parallel) per-file conversion loop, so concurrent workers never
+    race on the same paths (IMP-007).
     """
     show_progress = bool(show_progress)
     if not is_sphinx_project(src_dir):
@@ -1199,6 +1211,15 @@ def convert_sphinx_project(
     _documented = extract_documented_modules(src_dir)
     _roots = find_source_roots(src_dir, _documented)
     source_map: dict = build_source_map(_roots) if _roots else {}
+
+    # IMP-007: write the generated/ autosummary stub pages exactly ONCE, here
+    # in the single-threaded section, before the (possibly parallel) per-file
+    # loop. Per-file enrich_file calls only fill tables (write_stubs=False),
+    # so concurrent workers can no longer race on the same generated/*.md
+    # paths, and the work is not duplicated N times. Writing before the loop
+    # also guarantees the stubs exist even when every file is a cache hit.
+    if source_map:
+        write_generated_stubs(output_dir, source_map)
 
     is_md = builder == "markdown"
     html_dir = build_dir / "html"

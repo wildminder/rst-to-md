@@ -199,6 +199,7 @@ def enrich_file(
     src_rst,
     source_map: dict[str, ObjectInfo],
     output_dir=None,
+    write_stubs: bool = True,
 ) -> str:
     """Enrich one built Markdown file's autosummary tables and write stubs.
 
@@ -208,6 +209,11 @@ def enrich_file(
     pages next to the markdown file so the rewritten links resolve. When
     ``source_map`` is empty this is a deterministic passthrough. Returns the new
     text.
+
+    When ``write_stubs`` is ``False`` only the tables are enriched; the
+    ``generated/`` stub pages are not written (the caller — typically the
+    project-level converter — writes them once, outside any parallel loop;
+    IMP-007).
     """
     md_path = Path(md_path)
     text = md_path.read_text(encoding="utf-8")
@@ -216,9 +222,12 @@ def enrich_file(
     if new_text != text:
         md_path.write_text(new_text, encoding="utf-8")
     # Stub pages live beside the markdown file so the relative ``generated/...``
-    # links emitted above resolve from any output subdirectory.
-    gen_base = Path(output_dir) if output_dir else md_path.parent
-    write_generated_stubs(gen_base, source_map)
+    # links emitted above resolve from any output subdirectory. IMP-007: only
+    # write them when asked — the project converter writes them exactly once,
+    # single-threaded, so parallel per-file calls never race on the same paths.
+    if write_stubs:
+        gen_base = Path(output_dir) if output_dir else md_path.parent
+        write_generated_stubs(gen_base, source_map)
     return new_text
 
 

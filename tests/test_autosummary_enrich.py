@@ -295,3 +295,41 @@ def test_enrich_file_passthrough_when_empty_map(tmp_path: Path):
     assert new_text == "# Page\n\nBody.\n"
     # No stub pages are emitted.
     assert list((tmp_path / GENERATED_DIR_NAME).glob("*.md")) == []
+
+
+def test_enrich_file_write_stubs_false_skips_stubs(tmp_path: Path):
+    """IMP-007: write_stubs=False enriches tables but writes no generated/ stubs."""
+    source_map = _sample_pkg_source_map(tmp_path)
+
+    md = tmp_path / "api" / "beat.md"
+    md.parent.mkdir(parents=True)
+    md.write_text("# sample_pkg\n\n| `beat_track` | |\n|---|---\n", encoding="utf-8")
+    rst = tmp_path / "api" / "beat.rst"
+    rst.write_text(".. currentmodule:: sample_pkg\n", encoding="utf-8")
+
+    out = tmp_path / "out"
+    out.mkdir()
+    new_text = enrich_file(md, rst, source_map, output_dir=out, write_stubs=False)
+
+    # The table cell was still enriched from source...
+    assert "Beat tracker." in new_text
+    assert "Beat tracker." in md.read_text(encoding="utf-8")
+    # ...but no generated/ stub pages were written.
+    assert not (out / GENERATED_DIR_NAME).exists()
+    assert not (md.parent / GENERATED_DIR_NAME).exists()
+
+
+def test_enrich_file_default_still_writes_stubs(tmp_path: Path):
+    """IMP-007 backward compat: the default (write_stubs=True) keeps writing
+    the generated/ stub pages beside the output."""
+    source_map = _sample_pkg_source_map(tmp_path)
+
+    md = tmp_path / "api" / "beat.md"
+    md.parent.mkdir(parents=True)
+    md.write_text("# sample_pkg\n\n| `beat_track` | |\n|---|---\n", encoding="utf-8")
+    rst = tmp_path / "api" / "beat.rst"
+    rst.write_text(".. currentmodule:: sample_pkg\n", encoding="utf-8")
+
+    enrich_file(md, rst, source_map)
+
+    assert (md.parent / GENERATED_DIR_NAME / "sample_pkg.beat_track.md").is_file()
