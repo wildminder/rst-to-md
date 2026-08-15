@@ -62,8 +62,7 @@ def test_extract_sys_path_dirs_abspath_dot(tmp_path: Path):
     """The torchaudio pattern: sys.path.insert(0, os.path.abspath('.'))."""
     conf = tmp_path / "conf.py"
     conf.write_text(
-        "import os\nimport sys\n"
-        'sys.path.insert(0, os.path.abspath("."))\n',
+        'import os\nimport sys\nsys.path.insert(0, os.path.abspath("."))\n',
         encoding="utf-8",
     )
     assert extract_sys_path_dirs(conf) == [tmp_path.resolve()]
@@ -72,19 +71,14 @@ def test_extract_sys_path_dirs_abspath_dot(tmp_path: Path):
 def test_extract_sys_path_dirs_relative_subdir(tmp_path: Path):
     (tmp_path / "helpers").mkdir()
     conf = tmp_path / "conf.py"
-    conf.write_text(
-        "import sys\nsys.path.append('helpers')\n", encoding="utf-8"
-    )
+    conf.write_text("import sys\nsys.path.append('helpers')\n", encoding="utf-8")
     assert extract_sys_path_dirs(conf) == [(tmp_path / "helpers").resolve()]
 
 
 def test_extract_sys_path_dirs_ignores_non_literal(tmp_path: Path):
     conf = tmp_path / "conf.py"
     conf.write_text(
-        "import sys\n"
-        "some_var = 'x'\n"
-        "sys.path.insert(0, some_var)\n"
-        "sys.path.append(get_dir())\n",
+        "import sys\nsome_var = 'x'\nsys.path.insert(0, some_var)\nsys.path.append(get_dir())\n",
         encoding="utf-8",
     )
     assert extract_sys_path_dirs(conf) == []
@@ -125,18 +119,14 @@ def test_find_local_modules_ignores_plain_dir_without_init(tmp_path: Path):
 
 
 def test_find_local_modules_nonexistent_dir(tmp_path: Path):
-    assert (
-        find_local_modules({"mylocal"}, [tmp_path / "missing"]) == set()
-    )
+    assert find_local_modules({"mylocal"}, [tmp_path / "missing"]) == set()
 
 
 def test_find_local_modules_multiple_search_dirs(tmp_path: Path):
     helpers = tmp_path / "helpers"
     helpers.mkdir()
     (helpers / "myhelper.py").write_text("y = 2\n", encoding="utf-8")
-    assert find_local_modules(
-        {"myhelper"}, [tmp_path, helpers]
-    ) == {"myhelper"}
+    assert find_local_modules({"myhelper"}, [tmp_path, helpers]) == {"myhelper"}
 
 
 # --------------------------------------------------------------------------- #
@@ -167,9 +157,7 @@ def test_resolve_sphinx_project_dir_precedence(tmp_path: Path):
         d = tmp_path / sub
         d.mkdir()
         (d / "conf.py").write_text("pass\n", encoding="utf-8")
-    assert sphinx_module.resolve_sphinx_project_dir(tmp_path) == (
-        tmp_path / "source"
-    )
+    assert sphinx_module.resolve_sphinx_project_dir(tmp_path) == (tmp_path / "source")
 
 
 def test_extract_extensions_from_conf(tmp_path: Path):
@@ -198,9 +186,7 @@ def test_filter_extensions():
 
 def test_build_extensions_list_html():
     # HTML builder: core extensions + filtered conf extensions, no markdown ext.
-    merged = build_extensions_list(
-        ["sphinx.ext.autodoc", "sphinx_gallery", "numpydoc"], "html"
-    )
+    merged = build_extensions_list(["sphinx.ext.autodoc", "sphinx_gallery", "numpydoc"], "html")
     assert "sphinx.ext.autodoc" in merged
     assert "sphinx.ext.napoleon" in merged  # from CORE_EXTENSIONS
     assert "sphinx_gallery" not in merged  # denylisted
@@ -216,9 +202,7 @@ def test_build_extensions_list_markdown():
     # but keeps the bare `sphinx_markdown_builder` import name (its internal
     # imports use that name), so it is registered under that name and loaded via
     # PYTHONPATH shadowing in build_sphinx_html.
-    merged = build_extensions_list(
-        ["sphinx.ext.autodoc", "sphinx_gallery"], "markdown"
-    )
+    merged = build_extensions_list(["sphinx.ext.autodoc", "sphinx_gallery"], "markdown")
     assert "sphinx_markdown_builder" in merged
     assert "sphinx.ext.autodoc" in merged
     assert "sphinx_gallery" not in merged
@@ -313,9 +297,7 @@ def test_stub_sitecustomize_stubs_only_missing(tmp_path: Path):
         "'this_module_does_not_exist_xyz.sub.mod'\n"
         "print('OK')\n"
     ) % str(sitecustomize)
-    result = subprocess.run(
-        [sys.executable, "-c", script], capture_output=True, text=True
-    )
+    result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     assert "OK" in result.stdout
 
@@ -332,9 +314,7 @@ def test_stub_sitecustomize_dummy_module_is_callable(tmp_path: Path):
     and ``cycler`` is not installed.  The stub must make the call succeed
     (returning a dummy) so the build can proceed.
     """
-    stub_dir = build_stub_sitecustomize(
-        {"this_module_does_not_exist_xyz"}, tmp_path / "_stubs"
-    )
+    stub_dir = build_stub_sitecustomize({"this_module_does_not_exist_xyz"}, tmp_path / "_stubs")
     sitecustomize = stub_dir / "sitecustomize.py"
     script = (  # noqa: UP031  (keep %-format: string embeds a literal r'%s')
         "import importlib.util\n"
@@ -355,9 +335,7 @@ def test_stub_sitecustomize_dummy_module_is_callable(tmp_path: Path):
         "    pass\n"
         "print('OK')\n"
     ) % str(sitecustomize)
-    result = subprocess.run(
-        [sys.executable, "-c", script], capture_output=True, text=True
-    )
+    result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     assert "OK" in result.stdout
 
@@ -398,9 +376,7 @@ def test_build_sphinx_html_includes_autosummary_generate_false(tmp_path: Path):
     cmd_args: list[str] = []
     with mock.patch("subprocess.run") as mock_run:
         mock_run.return_value = mock.Mock(returncode=0, stdout="", stderr="")
-        build_sphinx_html(
-            src, build_dir, lightweight=True, stub_modules=set(), builder="html"
-        )
+        build_sphinx_html(src, build_dir, lightweight=True, stub_modules=set(), builder="html")
         cmd_args = mock_run.call_args[0][0]
 
     cmd_str = " ".join(cmd_args)
@@ -418,9 +394,7 @@ def _build_with_captured_cmd(tmp_path: Path, src: Path, **kwargs) -> list[str]:
         captured["cmd"] = list(cmd)
         return subprocess.CompletedProcess(cmd, 0)
 
-    with mock.patch(
-        "rst_to_md.converters.sphinx.subprocess.run", side_effect=fake_run
-    ):
+    with mock.patch("rst_to_md.converters.sphinx.subprocess.run", side_effect=fake_run):
         build_sphinx_html(src, build_dir, **kwargs)
     return captured["cmd"]
 
@@ -445,14 +419,12 @@ def test_build_sphinx_html_excludes_local_module_from_stubs(tmp_path: Path):
         builder="html",
     )
     cmd_str = " ".join(cmd)
-    mock_opt = next(
-        (tok for tok in cmd if tok.startswith("autodoc_mock_imports=")), None
-    )
+    mock_opt = next((tok for tok in cmd if tok.startswith("autodoc_mock_imports=")), None)
     assert mock_opt is not None
     assert "definitely_missing_pkg_xyz" in mock_opt
     assert "mylocal" not in mock_opt
     # The generated sitecustomize must not stub the local module either.
-    sitecustomize = (tmp_path / "build" / "_stubs" / "sitecustomize.py")
+    sitecustomize = tmp_path / "build" / "_stubs" / "sitecustomize.py"
     text = sitecustomize.read_text(encoding="utf-8")
     assert "'definitely_missing_pkg_xyz'" in text
     assert "'mylocal'" not in text
@@ -475,9 +447,7 @@ def test_build_sphinx_html_mock_all_excludes_local_module(tmp_path: Path):
         mock_all_imports=True,
         builder="html",
     )
-    mock_opt = next(
-        (tok for tok in cmd if tok.startswith("autodoc_mock_imports=")), None
-    )
+    mock_opt = next((tok for tok in cmd if tok.startswith("autodoc_mock_imports=")), None)
     assert mock_opt is not None
     assert "mylocal" not in mock_opt
     assert "definitely_missing_pkg_xyz" in mock_opt
@@ -492,9 +462,7 @@ def test_build_sphinx_html_local_module_via_sys_path_dir(tmp_path: Path):
     helpers.mkdir()
     (helpers / "myhelper.py").write_text("y = 2\n", encoding="utf-8")
     (src / "conf.py").write_text(
-        "import os\nimport sys\n"
-        'sys.path.insert(0, os.path.abspath("helpers"))\n'
-        "import myhelper\n",
+        'import os\nimport sys\nsys.path.insert(0, os.path.abspath("helpers"))\nimport myhelper\n',
         encoding="utf-8",
     )
 
@@ -505,13 +473,11 @@ def test_build_sphinx_html_local_module_via_sys_path_dir(tmp_path: Path):
         stub_modules={"myhelper"},
         builder="html",
     )
-    mock_opt = next(
-        (tok for tok in cmd if tok.startswith("autodoc_mock_imports=")), None
-    )
+    mock_opt = next((tok for tok in cmd if tok.startswith("autodoc_mock_imports=")), None)
     # Only a genuinely-missing module would produce the option; here the only
     # candidate is local, so no autodoc_mock_imports flag may be emitted.
     assert mock_opt is None
-    sitecustomize = (tmp_path / "build" / "_stubs" / "sitecustomize.py")
+    sitecustomize = tmp_path / "build" / "_stubs" / "sitecustomize.py"
     assert "'myhelper'" not in sitecustomize.read_text(encoding="utf-8")
 
 
@@ -530,9 +496,7 @@ def test_stub_sitecustomize_lazy_loader_attach_stub_returns_3tuple(
     module whose ``attach_stub`` returns a proper ``(getattr, dir, all)``
     3-tuple.
     """
-    stub_dir = build_stub_sitecustomize(
-        {"lazy_loader"}, tmp_path / "_stubs"
-    )
+    stub_dir = build_stub_sitecustomize({"lazy_loader"}, tmp_path / "_stubs")
     sitecustomize = stub_dir / "sitecustomize.py"
     script = (  # noqa: UP031  (keep %-format: string embeds a literal r'%s')
         "import importlib.util\n"
@@ -557,9 +521,7 @@ def test_stub_sitecustomize_lazy_loader_attach_stub_returns_3tuple(
         "assert isinstance(dir_fn(), list)\n"
         "print('OK')\n"
     ) % str(sitecustomize)
-    result = subprocess.run(
-        [sys.executable, "-c", script], capture_output=True, text=True
-    )
+    result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     assert "OK" in result.stdout
 
@@ -607,9 +569,7 @@ def _load_sitecustomize_and_publish(sitecustomize: Path, rst_text: str) -> str:
         "print('PARAS:', paras)\n"
         "print('OK')\n"
     ) % (str(sitecustomize), rst_text)
-    result = subprocess.run(
-        [sys.executable, "-c", script], capture_output=True, text=True
-    )
+    result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     assert "OK" in result.stdout
     return result.stdout
@@ -618,9 +578,7 @@ def _load_sitecustomize_and_publish(sitecustomize: Path, rst_text: str) -> str:
 def test_stub_sitecustomize_run_directive_guard_absorbs_crash(tmp_path: Path):
     """A directive whose run() raises must degrade to a system message
     instead of aborting the parse."""
-    stub_dir = build_stub_sitecustomize(
-        {"fake_missing_directive_pkg"}, tmp_path / "_stubs"
-    )
+    stub_dir = build_stub_sitecustomize({"fake_missing_directive_pkg"}, tmp_path / "_stubs")
     out = _load_sitecustomize_and_publish(
         stub_dir / "sitecustomize.py",
         "Title\n=====\n\n.. boom:: arg\n\nSurviving paragraph.\n",
@@ -635,9 +593,7 @@ def test_stub_sitecustomize_run_directive_guard_absorbs_dummy_directive(
 ):
     """Regression: registering a _DummyModule as a directive class (the exact
     torchaudio failure) must not raise TypeError during parsing."""
-    stub_dir = build_stub_sitecustomize(
-        {"fake_missing_directive_pkg"}, tmp_path / "_stubs"
-    )
+    stub_dir = build_stub_sitecustomize({"fake_missing_directive_pkg"}, tmp_path / "_stubs")
     out = _load_sitecustomize_and_publish(
         stub_dir / "sitecustomize.py",
         "Title\n=====\n\n.. dummy:: something\n\nBody text.\n",
@@ -650,9 +606,7 @@ def test_stub_sitecustomize_run_directive_guard_absorbs_dummy_directive(
 def test_stub_sitecustomize_run_directive_guard_passthrough_ok(tmp_path: Path):
     """A healthy directive still renders its nodes unchanged (the guard is
     transparent)."""
-    stub_dir = build_stub_sitecustomize(
-        {"fake_missing_directive_pkg"}, tmp_path / "_stubs"
-    )
+    stub_dir = build_stub_sitecustomize({"fake_missing_directive_pkg"}, tmp_path / "_stubs")
     out = _load_sitecustomize_and_publish(
         stub_dir / "sitecustomize.py",
         "Title\n=====\n\n.. note::\n\n   A note body.\n",
@@ -677,9 +631,7 @@ def test_convert_html_to_md_dict_return(tmp_path: Path):
     html = tmp_path / "page.html"
     html.write_text("<h1>Title</h1>", encoding="utf-8")
     md = tmp_path / "page.md"
-    with mock.patch(
-        "html_to_markdown.convert", return_value={"content": "# Title\n"}
-    ):
+    with mock.patch("html_to_markdown.convert", return_value={"content": "# Title\n"}):
         assert convert_html_to_md(html, md) is True
     assert "# Title" in md.read_text(encoding="utf-8")
 
@@ -707,9 +659,7 @@ def test_convert_html_to_md_failure_returns_false(tmp_path: Path):
     html = tmp_path / "page.html"
     html.write_text("<h1>x</h1>", encoding="utf-8")
     md = tmp_path / "page.md"
-    with mock.patch(
-        "html_to_markdown.convert", side_effect=RuntimeError("boom")
-    ):
+    with mock.patch("html_to_markdown.convert", side_effect=RuntimeError("boom")):
         assert convert_html_to_md(html, md) is False
 
 
@@ -779,9 +729,7 @@ def test_convert_html_to_md_keep_chrome(tmp_path: Path):
 # --------------------------------------------------------------------------- #
 # P0/P3: autodoc content preservation (real Sphinx build of the fixture)
 # --------------------------------------------------------------------------- #
-_FIXTURE_AUTODOC = (
-    Path(__file__).resolve().parent / "fixtures" / "sphinx_autodoc"
-)
+_FIXTURE_AUTODOC = Path(__file__).resolve().parent / "fixtures" / "sphinx_autodoc"
 
 
 def test_autodoc_fixture_preserves_class_content(tmp_path: Path):
@@ -836,8 +784,7 @@ def test_build_sphinx_html_lightweight_command(tmp_path: Path):
     src = tmp_path / "src"
     src.mkdir()
     (src / "conf.py").write_text(
-        "import missing_package\n"
-        "extensions = ['sphinx.ext.autodoc', 'sphinx_gallery']\n",
+        "import missing_package\nextensions = ['sphinx.ext.autodoc', 'sphinx_gallery']\n",
         encoding="utf-8",
     )
     build = tmp_path / "build"
@@ -853,7 +800,10 @@ def test_build_sphinx_html_lightweight_command(tmp_path: Path):
 
     with mock.patch("subprocess.run", side_effect=fake_run):
         ok = sphinx_module.build_sphinx_html(
-            src, build, verbose=False, lightweight=True,
+            src,
+            build,
+            verbose=False,
+            lightweight=True,
             stub_modules={"missing_package"},
         )
 
@@ -875,8 +825,7 @@ def test_build_injects_markdown_builder(tmp_path: Path):
     src = tmp_path / "src"
     src.mkdir()
     (src / "conf.py").write_text(
-        "import missing_package\n"
-        "extensions = ['sphinx.ext.autodoc', 'sphinx_gallery']\n",
+        "import missing_package\nextensions = ['sphinx.ext.autodoc', 'sphinx_gallery']\n",
         encoding="utf-8",
     )
     build = tmp_path / "build"
@@ -915,9 +864,7 @@ def test_build_injects_vendored_builder_path(tmp_path: Path):
 
     src = tmp_path / "src"
     src.mkdir()
-    (src / "conf.py").write_text(
-        "extensions = ['sphinx.ext.autodoc']\n", encoding="utf-8"
-    )
+    (src / "conf.py").write_text("extensions = ['sphinx.ext.autodoc']\n", encoding="utf-8")
     build = tmp_path / "build"
 
     captured: dict = {}
@@ -928,9 +875,7 @@ def test_build_injects_vendored_builder_path(tmp_path: Path):
         return subprocess.CompletedProcess(cmd, 0, "", "")
 
     with mock.patch("subprocess.run", side_effect=fake_run):
-        sphinx_module.build_sphinx_html(
-            src, build, lightweight=True, builder="markdown"
-        )
+        sphinx_module.build_sphinx_html(src, build, lightweight=True, builder="markdown")
 
     env = captured.get("env", {})
     pythonpath = env.get("PYTHONPATH", "")
@@ -1000,9 +945,7 @@ def test_build_sphinx_html_non_lightweight_no_override(tmp_path: Path):
         return subprocess.CompletedProcess(cmd, 0, "", "")
 
     with mock.patch("subprocess.run", side_effect=fake_run):
-        sphinx_module.build_sphinx_html(
-            src, build, lightweight=False, stub_modules=None
-        )
+        sphinx_module.build_sphinx_html(src, build, lightweight=False, stub_modules=None)
     cmd = captured["cmd"]
     assert not any(a.startswith("extensions=") for a in cmd)
     assert not any(a.startswith("autodoc_mock_imports=") for a in cmd)
@@ -1014,8 +957,7 @@ def test_build_mock_all_imports(tmp_path: Path):
     src = tmp_path / "src"
     src.mkdir()
     (src / "conf.py").write_text(
-        "import os\nimport sphinx\nimport missing_package\n"
-        "extensions = ['sphinx.ext.autodoc']\n",
+        "import os\nimport sphinx\nimport missing_package\nextensions = ['sphinx.ext.autodoc']\n",
         encoding="utf-8",
     )
     build = tmp_path / "build"
@@ -1086,9 +1028,10 @@ def test_convert_sphinx_project_skips_and_sorts(tmp_path: Path):
     (src / "conf.py").write_text("pass\n", encoding="utf-8")
     out = tmp_path / "out"
 
-    with mock.patch.object(
-        sphinx_module, "build_sphinx_html", side_effect=_fake_build
-    ), mock.patch("html_to_markdown.convert", return_value="# x\n"):
+    with (
+        mock.patch.object(sphinx_module, "build_sphinx_html", side_effect=_fake_build),
+        mock.patch("html_to_markdown.convert", return_value="# x\n"),
+    ):
         success, errors, skipped = convert_sphinx_project(src, out, lightweight=True)
 
     # index.html and guide.html converted; genindex/search/examples skipped.
@@ -1107,9 +1050,7 @@ def test_convert_sphinx_project_skips_and_sorts(tmp_path: Path):
 # --------------------------------------------------------------------------- #
 # P11: direct Markdown builder path (sphinx_markdown_builder)
 # --------------------------------------------------------------------------- #
-def test_convert_sphinx_project_markdown_builder(
-    sphinx_min_project: Path, tmp_path: Path
-):
+def test_convert_sphinx_project_markdown_builder(sphinx_min_project: Path, tmp_path: Path):
     """The direct Markdown builder (-b markdown) produces .md files directly
     (no HTML stage) and still skips system pages like genindex."""
     out = tmp_path / "out"
@@ -1129,9 +1070,7 @@ def test_convert_sphinx_project_markdown_builder(
     assert "<html" not in text
 
 
-def test_convert_sphinx_project_markdown_skips_genindex(
-    sphinx_min_project: Path, tmp_path: Path
-):
+def test_convert_sphinx_project_markdown_skips_genindex(sphinx_min_project: Path, tmp_path: Path):
     """genindex.md (from the Markdown builder) must never appear in output.
 
     The skip itself is exercised by the suffix-agnostic SKIP_STEMS unit test and
@@ -1147,14 +1086,10 @@ def test_convert_sphinx_project_markdown_skips_genindex(
     assert not (out / "genindex.md").exists()
 
 
-def test_convert_sphinx_project_markdown_cache(
-    sphinx_min_project: Path, tmp_path: Path
-):
+def test_convert_sphinx_project_markdown_cache(sphinx_min_project: Path, tmp_path: Path):
     """NTH-001 caching works for the Markdown builder (source .rst mtime)."""
     out = tmp_path / "out"
-    r1 = convert_sphinx_project(
-        sphinx_min_project, out, builder="markdown", lightweight=True
-    )
+    r1 = convert_sphinx_project(sphinx_min_project, out, builder="markdown", lightweight=True)
     assert r1[0] > 0
     r2 = convert_sphinx_project(
         sphinx_min_project,
@@ -1168,9 +1103,7 @@ def test_convert_sphinx_project_markdown_cache(
     assert r2[0] == 0
 
 
-def test_convert_sphinx_project_markdown_parallel(
-    sphinx_min_project: Path, tmp_path: Path
-):
+def test_convert_sphinx_project_markdown_parallel(sphinx_min_project: Path, tmp_path: Path):
     """NTH-002 parallel conversion works for the Markdown builder."""
     out = tmp_path / "out"
     success, errors, skipped = convert_sphinx_project(
@@ -1188,9 +1121,7 @@ def test_convert_sphinx_project_markdown_parallel(
 # --------------------------------------------------------------------------- #
 # P11: structural parity between HTML and direct Markdown builders
 # --------------------------------------------------------------------------- #
-def test_markdown_builder_parity_with_html(
-    sphinx_md_project: Path, tmp_path: Path
-):
+def test_markdown_builder_parity_with_html(sphinx_md_project: Path, tmp_path: Path):
     """Both builders must yield a .md for the same source, and the direct
     Markdown builder output must not be raw HTML."""
     out_html = tmp_path / "html"
@@ -1214,16 +1145,12 @@ def test_markdown_builder_parity_with_html(
     assert "<html" not in md_text
 
 
-def test_markdown_builder_preserves_autodoc(
-    sphinx_md_project: Path, tmp_path: Path
-):
+def test_markdown_builder_preserves_autodoc(sphinx_md_project: Path, tmp_path: Path):
     """The direct Markdown builder preserves autodoc class + members, and the
     vendored translator renders field lists / annotations / member signatures
     cleanly (D1/D2/D3 fixes)."""
     out = tmp_path / "out"
-    convert_sphinx_project(
-        sphinx_md_project, out, builder="markdown", lightweight=True
-    )
+    convert_sphinx_project(sphinx_md_project, out, builder="markdown", lightweight=True)
     text = (out / "index.md").read_text(encoding="utf-8")
     assert "Calculator" in text
     assert "add" in text
@@ -1255,15 +1182,11 @@ def test_markdown_builder_preserves_autodoc(
     assert "#### *class*" not in text
 
 
-def test_markdown_builder_autodoc_formatting_matches_html(
-    sphinx_md_project: Path, tmp_path: Path
-):
+def test_markdown_builder_autodoc_formatting_matches_html(sphinx_md_project: Path, tmp_path: Path):
     """Regression: the markdown builder must not emit the three known
     autodoc formatting defects that the html builder avoids."""
     out_md = tmp_path / "md"
-    convert_sphinx_project(
-        sphinx_md_project, out_md, builder="markdown", lightweight=True
-    )
+    convert_sphinx_project(sphinx_md_project, out_md, builder="markdown", lightweight=True)
     md = (out_md / "index.md").read_text(encoding="utf-8")
     # D1 - field name is NOT a bullet item (the outer nested-bullet defect)
     assert "* **Parameters:**" not in md
@@ -1287,9 +1210,7 @@ def test_markdown_builder_member_method_is_heading_property_is_bold(
     bold paragraph. The top-level class is a `##` section header. This guards
     against the regression where every nested member was flattened to bold."""
     out = tmp_path / "out"
-    convert_sphinx_project(
-        sphinx_md_project, out, builder="markdown", lightweight=True
-    )
+    convert_sphinx_project(sphinx_md_project, out, builder="markdown", lightweight=True)
     text = (out / "index.md").read_text(encoding="utf-8")
     # Top-level class -> h2 section header.
     assert "## class sample_pkg.Calculator(precision: int = 2)" in text
@@ -1312,9 +1233,7 @@ def test_markdown_builder_signature_xref_is_plain_text(
     link. This matches the legacy html builder, which emits the bare type name.
     """
     out = tmp_path / "out"
-    convert_sphinx_project(
-        sphinx_md_xref_project, out, builder="markdown", lightweight=True
-    )
+    convert_sphinx_project(sphinx_md_xref_project, out, builder="markdown", lightweight=True)
     text = (out / "index.md").read_text(encoding="utf-8")
     # The type name is present...
     assert "BaseSession" in text
@@ -1327,18 +1246,14 @@ def test_markdown_builder_signature_xref_is_plain_text(
     assert "→ BaseSession" in text or "BaseSession" in text
 
 
-def test_markdown_builder_prose_xref_still_linked(
-    sphinx_md_xref_project: Path, tmp_path: Path
-):
+def test_markdown_builder_prose_xref_still_linked(sphinx_md_xref_project: Path, tmp_path: Path):
     """XREF: a cross-reference in *prose* (outside any signature) must NOT be
     flattened to plain text — only signature xrefs are. The builder renders the
     `:class:` role as a code span `` `session.base.BaseSession` ``, which is
     distinct from the plain `BaseSession` used inside the signature, proving the
     `desc_depth` guard only affects signature subtrees."""
     out = tmp_path / "out"
-    convert_sphinx_project(
-        sphinx_md_xref_project, out, builder="markdown", lightweight=True
-    )
+    convert_sphinx_project(sphinx_md_xref_project, out, builder="markdown", lightweight=True)
     text = (out / "index.md").read_text(encoding="utf-8")
     # Prose reference keeps its qualified code-span form (not flattened).
     assert "`session.base.BaseSession`" in text
@@ -1355,16 +1270,12 @@ def test_markdown_builder_signature_xref_no_orphan_context(
     @pushing_context depart stays stack-balanced — the generated Markdown for
     the signature is well-formed (no dangling `](` or unbalanced brackets)."""
     out = tmp_path / "out"
-    convert_sphinx_project(
-        sphinx_md_xref_project, out, builder="markdown", lightweight=True
-    )
+    convert_sphinx_project(sphinx_md_xref_project, out, builder="markdown", lightweight=True)
     text = (out / "index.md").read_text(encoding="utf-8")
     # Count brackets: any `[` must be matched by a `]` on the same line within
     # the signature region. Simplest robust check: the signature line has no
     # stray `](` that isn't part of a valid link.
-    sig_line = next(
-        (ln for ln in text.splitlines() if ln.startswith("## class bot.Bot")), ""
-    )
+    sig_line = next((ln for ln in text.splitlines() if ln.startswith("## class bot.Bot")), "")
     assert sig_line
     # No dangling link-close without an opener, and no `[Type](` inside sig.
     assert "[BaseSession](" not in sig_line
@@ -1383,9 +1294,7 @@ def test_convert_sphinx_project_non_project(tmp_path: Path):
 # --------------------------------------------------------------------------- #
 # P10: napoleon skip-member robustness (pydantic-style crash must not abort)
 # --------------------------------------------------------------------------- #
-_FIXTURE_NAPOLEON = (
-    Path(__file__).resolve().parent / "fixtures" / "sphinx_napoleon_crash"
-)
+_FIXTURE_NAPOLEON = Path(__file__).resolve().parent / "fixtures" / "sphinx_napoleon_crash"
 
 
 def test_sitecustomize_patches_napoleon_skip_member(tmp_path: Path):
@@ -1426,12 +1335,13 @@ def test_sphinx_uses_shared_postprocess(tmp_path: Path):
     html = tmp_path / "page.html"
     html.write_text("<html></html>", encoding="utf-8")
     md = tmp_path / "page.md"
-    with mock.patch(
-        "html_to_markdown.convert", return_value="# x\n"
-    ), mock.patch(
-        "rst_to_md.converters.sphinx.post_process_markdown",
-        wraps=pp.post_process_markdown,
-    ) as spy:
+    with (
+        mock.patch("html_to_markdown.convert", return_value="# x\n"),
+        mock.patch(
+            "rst_to_md.converters.sphinx.post_process_markdown",
+            wraps=pp.post_process_markdown,
+        ) as spy,
+    ):
         convert_html_to_md(html, md)
     spy.assert_called()
 
@@ -1445,9 +1355,7 @@ def test_napoleon_skip_member_crash_does_not_abort_build(tmp_path: Path):
     needs stubbing.
     """
     build_dir = tmp_path / "build"
-    ok = build_sphinx_html(
-        _FIXTURE_NAPOLEON, build_dir, lightweight=True, stub_modules=set()
-    )
+    ok = build_sphinx_html(_FIXTURE_NAPOLEON, build_dir, lightweight=True, stub_modules=set())
     assert ok is True
     html = build_dir / "html" / "index.html"
     assert html.exists()
@@ -1494,14 +1402,13 @@ def test_convert_sphinx_project_retries_once(tmp_path: Path):
             raise SphinxBuildError("first build failed")
         html_dir = build_dir / "html"
         html_dir.mkdir(parents=True, exist_ok=True)
-        (html_dir / "index.html").write_text(
-            "<html><body>content</body></html>", encoding="utf-8"
-        )
+        (html_dir / "index.html").write_text("<html><body>content</body></html>", encoding="utf-8")
         return True
 
-    with mock.patch.object(
-        sphinx_module, "build_sphinx_html", side_effect=fake_build
-    ), mock.patch("html_to_markdown.convert", return_value="# x\n"):
+    with (
+        mock.patch.object(sphinx_module, "build_sphinx_html", side_effect=fake_build),
+        mock.patch("html_to_markdown.convert", return_value="# x\n"),
+    ):
         success, errors, skipped = convert_sphinx_project(src, out, lightweight=True)
 
     assert calls["n"] == 2
@@ -1525,19 +1432,19 @@ def test_convert_sphinx_project_fallback_logs_warning(tmp_path: Path):
             raise SphinxBuildError("first build failed")
         html_dir = build_dir / "html"
         html_dir.mkdir(parents=True, exist_ok=True)
-        (html_dir / "index.html").write_text(
-            "<html><body>content</body></html>", encoding="utf-8"
-        )
+        (html_dir / "index.html").write_text("<html><body>content</body></html>", encoding="utf-8")
         return True
 
     # The rst_to_md logger does not propagate (see core/logging.setup_logging),
     # so caplog on the root logger would not capture it. Spy on the module's
     # logger.warning directly instead.
-    with mock.patch.object(
-        sphinx_module, "build_sphinx_html", side_effect=fake_build
-    ), mock.patch("html_to_markdown.convert", return_value="# x\n"), mock.patch.object(
-        sphinx_module.logger, "warning", wraps=sphinx_module.logger.warning
-    ) as warn_spy:
+    with (
+        mock.patch.object(sphinx_module, "build_sphinx_html", side_effect=fake_build),
+        mock.patch("html_to_markdown.convert", return_value="# x\n"),
+        mock.patch.object(
+            sphinx_module.logger, "warning", wraps=sphinx_module.logger.warning
+        ) as warn_spy,
+    ):
         convert_sphinx_project(src, out, lightweight=True)
 
     assert any(
@@ -1592,9 +1499,7 @@ def test_sphinx_cache_off_reconverts(sphinx_min_project: Path, tmp_path: Path):
     with mock.patch("html_to_markdown.convert", return_value="# x\n"):
         convert_sphinx_project(sphinx_min_project, out)  # populate cache
         r_cache_on = convert_sphinx_project(sphinx_min_project, out, use_cache=True)
-        r_cache_off = convert_sphinx_project(
-            sphinx_min_project, out, use_cache=False
-        )
+        r_cache_off = convert_sphinx_project(sphinx_min_project, out, use_cache=False)
     # cache-on: real docs skipped (no new successes)
     assert r_cache_on[0] == 0
     # cache-off: real docs reconverted
@@ -1610,9 +1515,7 @@ def test_convert_html_to_md_records_error(tmp_path: Path):
     html.write_text("<html></html>", encoding="utf-8")
     md = tmp_path / "p.md"
     errs: list[str] = []
-    with mock.patch(
-        "html_to_markdown.convert", side_effect=RuntimeError("boom")
-    ):
+    with mock.patch("html_to_markdown.convert", side_effect=RuntimeError("boom")):
         ok = convert_html_to_md(html, md, errors=errs)
     assert ok is False
     assert len(errs) == 1
@@ -1693,17 +1596,13 @@ def test_build_sphinx_html_passes_builder(tmp_path: Path):
         captured["cmd"] = list(cmd)
         return subprocess.CompletedProcess(cmd, 0)
 
-    with mock.patch(
-        "rst_to_md.converters.sphinx.subprocess.run", side_effect=fake_run
-    ):
+    with mock.patch("rst_to_md.converters.sphinx.subprocess.run", side_effect=fake_run):
         build_sphinx_html(src, build, builder="singlehtml")
     assert "-b" in captured["cmd"]
     assert "singlehtml" in captured["cmd"]
 
     captured.clear()
-    with mock.patch(
-        "rst_to_md.converters.sphinx.subprocess.run", side_effect=fake_run
-    ):
+    with mock.patch("rst_to_md.converters.sphinx.subprocess.run", side_effect=fake_run):
         build_sphinx_html(src, build)
     assert "-b" in captured["cmd"]
     assert "html" in captured["cmd"]  # default builder
@@ -1720,14 +1619,13 @@ def test_convert_sphinx_project_passes_builder(tmp_path: Path):
         seen.append(kwargs.get("builder"))
         html_dir = build_dir / "html"
         html_dir.mkdir(parents=True, exist_ok=True)
-        (html_dir / "index.html").write_text(
-            "<html><body>x</body></html>", encoding="utf-8"
-        )
+        (html_dir / "index.html").write_text("<html><body>x</body></html>", encoding="utf-8")
         return True
 
-    with mock.patch.object(
-        sphinx_module, "build_sphinx_html", side_effect=fake_build
-    ), mock.patch("html_to_markdown.convert", return_value="# x\n"):
+    with (
+        mock.patch.object(sphinx_module, "build_sphinx_html", side_effect=fake_build),
+        mock.patch("html_to_markdown.convert", return_value="# x\n"),
+    ):
         convert_sphinx_project(src, out, builder="singlehtml")
     assert seen == ["singlehtml"]
 
@@ -1745,14 +1643,13 @@ def test_convert_sphinx_project_passes_build_workers(tmp_path: Path):
         calls.append(kwargs.get("build_workers"))
         html_dir = build_dir / "html"
         html_dir.mkdir(parents=True, exist_ok=True)
-        (html_dir / "index.html").write_text(
-            "<html><body>x</body></html>", encoding="utf-8"
-        )
+        (html_dir / "index.html").write_text("<html><body>x</body></html>", encoding="utf-8")
         return True
 
-    with mock.patch.object(
-        sphinx_module, "build_sphinx_html", side_effect=fake_build
-    ), mock.patch("html_to_markdown.convert", return_value="# x\n"):
+    with (
+        mock.patch.object(sphinx_module, "build_sphinx_html", side_effect=fake_build),
+        mock.patch("html_to_markdown.convert", return_value="# x\n"),
+    ):
         convert_sphinx_project(src, out, build_workers=4)
     # Primary build gets 4; no fallback was needed.
     assert calls == [4]
@@ -1772,14 +1669,13 @@ def test_convert_sphinx_project_fallback_is_serial(tmp_path: Path):
             raise sphinx_module.SphinxBuildError("boom")
         html_dir = build_dir / "html"
         html_dir.mkdir(parents=True, exist_ok=True)
-        (html_dir / "index.html").write_text(
-            "<html><body>x</body></html>", encoding="utf-8"
-        )
+        (html_dir / "index.html").write_text("<html><body>x</body></html>", encoding="utf-8")
         return True
 
-    with mock.patch.object(
-        sphinx_module, "build_sphinx_html", side_effect=fake_build
-    ), mock.patch("html_to_markdown.convert", return_value="# x\n"):
+    with (
+        mock.patch.object(sphinx_module, "build_sphinx_html", side_effect=fake_build),
+        mock.patch("html_to_markdown.convert", return_value="# x\n"),
+    ):
         convert_sphinx_project(src, out, build_workers=4)
     # First attempt parallel (4), retry serial (1).
     assert calls == [4, 1]
@@ -1801,14 +1697,13 @@ def test_fallback_uses_same_builder(tmp_path: Path):
             raise SphinxBuildError("first build failed")
         html_dir = build_dir / "html"
         html_dir.mkdir(parents=True, exist_ok=True)
-        (html_dir / "index.html").write_text(
-            "<html><body>x</body></html>", encoding="utf-8"
-        )
+        (html_dir / "index.html").write_text("<html><body>x</body></html>", encoding="utf-8")
         return True
 
-    with mock.patch.object(
-        sphinx_module, "build_sphinx_html", side_effect=fake_build
-    ), mock.patch("html_to_markdown.convert", return_value="# x\n"):
+    with (
+        mock.patch.object(sphinx_module, "build_sphinx_html", side_effect=fake_build),
+        mock.patch("html_to_markdown.convert", return_value="# x\n"),
+    ):
         convert_sphinx_project(src, out, builder="singlehtml")
     assert seen == ["singlehtml", "singlehtml"]
 
@@ -1821,9 +1716,7 @@ def _write_src_with_documented_modules(
 ) -> Path:
     src = tmp_path / "src"
     src.mkdir()
-    (src / "conf.py").write_text(
-        f"extensions = {extensions}\n", encoding="utf-8"
-    )
+    (src / "conf.py").write_text(f"extensions = {extensions}\n", encoding="utf-8")
     (src / "index.rst").write_text(rst_body, encoding="utf-8")
     return src
 
@@ -1840,9 +1733,7 @@ def _capture_autosummary_flag(tmp_path: Path, **kwargs) -> str:
         captured["cmd"] = list(cmd)
         return subprocess.CompletedProcess(cmd, 0)
 
-    with mock.patch(
-        "rst_to_md.converters.sphinx.subprocess.run", side_effect=fake_run
-    ):
+    with mock.patch("rst_to_md.converters.sphinx.subprocess.run", side_effect=fake_run):
         sphinx_module.build_sphinx_html(src, build, **kwargs)
     cmd_str = " ".join(captured["cmd"])
     # Pull out the single autosummary_generate= flag.
@@ -1854,9 +1745,7 @@ def _capture_autosummary_flag(tmp_path: Path, **kwargs) -> str:
 
 
 def test_build_sphinx_html_autosummary_generate_false_explicit(tmp_path: Path):
-    src = _write_src_with_documented_modules(
-        tmp_path, "Title\n=====\n\nBody\n"
-    )
+    src = _write_src_with_documented_modules(tmp_path, "Title\n=====\n\nBody\n")
     flag, _ = _capture_autosummary_flag(
         tmp_path,
         src=src,
@@ -1869,9 +1758,7 @@ def test_build_sphinx_html_autosummary_generate_false_explicit(tmp_path: Path):
 
 
 def test_build_sphinx_html_autosummary_generate_true_explicit(tmp_path: Path):
-    src = _write_src_with_documented_modules(
-        tmp_path, "Title\n=====\n\nBody\n"
-    )
+    src = _write_src_with_documented_modules(tmp_path, "Title\n=====\n\nBody\n")
     flag, _ = _capture_autosummary_flag(
         tmp_path,
         src=src,
@@ -1914,29 +1801,20 @@ def test_decide_autosummary_generate_bool_passthrough():
 
 def test_decide_autosummary_generate_auto_importable(tmp_path: Path):
     # ``sphinx`` is always installed in the test environment -> importable.
-    src = _write_src_with_documented_modules(
-        tmp_path, ".. currentmodule:: sphinx\n"
-    )
+    src = _write_src_with_documented_modules(tmp_path, ".. currentmodule:: sphinx\n")
     assert decide_autosummary_generate("auto", src) is True
 
 
 def test_decide_autosummary_generate_auto_not_importable(tmp_path: Path):
-    src = _write_src_with_documented_modules(
-        tmp_path, ".. currentmodule:: nope_package_xyz\n"
-    )
+    src = _write_src_with_documented_modules(tmp_path, ".. currentmodule:: nope_package_xyz\n")
     assert decide_autosummary_generate("auto", src) is False
 
 
 def test_decide_autosummary_generate_auto_short_circuits(tmp_path: Path):
     # When the caller already knows importability, the probe is skipped and the
     # supplied value wins even for a non-importable module.
-    src = _write_src_with_documented_modules(
-        tmp_path, ".. currentmodule:: nope_package_xyz\n"
-    )
-    assert (
-        decide_autosummary_generate("auto", src, documented_importable=True)
-        is True
-    )
+    src = _write_src_with_documented_modules(tmp_path, ".. currentmodule:: nope_package_xyz\n")
+    assert decide_autosummary_generate("auto", src, documented_importable=True) is True
 
 
 def test_extract_documented_modules_parses_directives(tmp_path: Path):
@@ -1969,9 +1847,7 @@ def test_cli_autosummary_generate_explicit():
     from rst_to_md.cli import build_parser
 
     for value in ("auto", "true", "false"):
-        args = build_parser().parse_args(
-            ["docs", "--autosummary-generate", value]
-        )
+        args = build_parser().parse_args(["docs", "--autosummary-generate", value])
         assert args.autosummary_generate == value
 
 
@@ -1982,9 +1858,7 @@ def _sample_pkg_source_map(tmp_path: Path) -> dict:
     pkg = tmp_path / "sample_pkg"
     pkg.mkdir()
     (pkg / "__init__.py").write_text(
-        "def beat_track(y=None, sr=None):\n"
-        '    """Beat tracker."""\n'
-        "    return []\n",
+        'def beat_track(y=None, sr=None):\n    """Beat tracker."""\n    return []\n',
         encoding="utf-8",
     )
     from rst_to_md.core.source_extract import (
@@ -2005,9 +1879,7 @@ def test_convert_built_md_enriches_autosummary(tmp_path: Path):
     src_rst.write_text(".. currentmodule:: sample_pkg\n", encoding="utf-8")
     in_md = tmp_path / "in" / "page.md"
     in_md.parent.mkdir(parents=True)
-    in_md.write_text(
-        "# sample_pkg\n\n| `beat_track` | |\n|---|---\n", encoding="utf-8"
-    )
+    in_md.write_text("# sample_pkg\n\n| `beat_track` | |\n|---|---\n", encoding="utf-8")
     out_md = tmp_path / "out" / "page.md"
     out_dir = tmp_path / "out"
     out_dir.mkdir()
@@ -2031,9 +1903,7 @@ def test_convert_built_md_no_source_map_is_passthrough(tmp_path: Path):
     does NOT enrich or create a generated/ dir."""
     in_md = tmp_path / "in" / "page.md"
     in_md.parent.mkdir(parents=True)
-    in_md.write_text(
-        "# Page\n\n| `beat_track` | |\n|---|---\n", encoding="utf-8"
-    )
+    in_md.write_text("# Page\n\n| `beat_track` | |\n|---|---\n", encoding="utf-8")
     out_md = tmp_path / "out" / "page.md"
     out_md.parent.mkdir(parents=True)
 
@@ -2104,9 +1974,7 @@ def test_convert_sphinx_project_writes_generated_stubs(
 ):
     """The generated/ stub pages carry the AST signature + docstring."""
     out = tmp_path / "out"
-    convert_sphinx_project(
-        sphinx_md_autosummary_project, out, builder="markdown", lightweight=True
-    )
+    convert_sphinx_project(sphinx_md_autosummary_project, out, builder="markdown", lightweight=True)
     beat_stub = out / "generated" / "sample_pkg.beat_track.md"
     assert beat_stub.is_file()
     content = beat_stub.read_text(encoding="utf-8")

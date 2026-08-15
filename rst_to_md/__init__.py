@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "1.2.1"
+__version__ = "1.4.3"
 __author__ = "Wildminder"
 
 from .converters.rst import convert_directory, convert_rst_to_md

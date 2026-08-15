@@ -4,7 +4,6 @@ It intentionally imports a missing package (stubbed in lightweight mode) and
 lists a denylisted extension (sphinx_gallery) that must be filtered out.
 """
 
-
 project = "sphinx_min"
 author = "Test Author"
 copyright = "2024, Test Author"

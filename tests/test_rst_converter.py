@@ -24,9 +24,7 @@ def test_convert_rst_to_md_failure_returns_false(tmp_path: Path):
     src = tmp_path / "a.rst"
     src.write_text("Title\n=====\n", encoding="utf-8")
     dst = tmp_path / "a.md"
-    with mock.patch(
-        "pypandoc.convert_text", side_effect=RuntimeError("boom")
-    ):
+    with mock.patch("pypandoc.convert_text", side_effect=RuntimeError("boom")):
         result = convert_rst_to_md(src, dst)
     assert result is False
     # Failure must not create an output file.
@@ -87,12 +85,13 @@ def test_rst_uses_shared_postprocess(tmp_path: Path):
     src = tmp_path / "a.rst"
     src.write_text("Title\n=====\n\nHello.\n", encoding="utf-8")
     dst = tmp_path / "a.md"
-    with mock.patch(
-        "pypandoc.convert_text", return_value="# Title\n\nHello.\n"
-    ), mock.patch(
-        "rst_to_md.converters.rst.post_process_markdown",
-        wraps=pp.post_process_markdown,
-    ) as spy:
+    with (
+        mock.patch("pypandoc.convert_text", return_value="# Title\n\nHello.\n"),
+        mock.patch(
+            "rst_to_md.converters.rst.post_process_markdown",
+            wraps=pp.post_process_markdown,
+        ) as spy,
+    ):
         convert_rst_to_md(src, dst)
     spy.assert_called()
 
@@ -117,9 +116,7 @@ def test_convert_directory_cache_off_reconverts(simple_project: Path, tmp_path: 
     assert r2[0] == 2 and r2[2] == 0
 
 
-def test_convert_directory_cache_after_source_change(
-    simple_project: Path, tmp_path: Path
-):
+def test_convert_directory_cache_after_source_change(simple_project: Path, tmp_path: Path):
     import os
     import time
 
@@ -142,9 +139,7 @@ def test_convert_rst_to_md_records_error(tmp_path: Path):
     src.write_text("x", encoding="utf-8")
     dst = tmp_path / "a.md"
     errs: list[str] = []
-    with mock.patch(
-        "pypandoc.convert_text", side_effect=RuntimeError("boom")
-    ):
+    with mock.patch("pypandoc.convert_text", side_effect=RuntimeError("boom")):
         ok = convert_rst_to_md(src, dst, errors=errs)
     assert ok is False
     assert len(errs) == 1

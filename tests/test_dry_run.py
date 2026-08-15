@@ -33,11 +33,7 @@ def test_sphinx_dry_run_no_build(sphinx_min_project: Path, tmp_path: Path):
     build_mock.assert_not_called()
     assert not (out / "_sphinx_build").exists()
     rst_count = len(
-        [
-            p
-            for p in sphinx_min_project.rglob("*.rst")
-            if p.parent.name not in SKIP_DIRS
-        ]
+        [p for p in sphinx_min_project.rglob("*.rst") if p.parent.name not in SKIP_DIRS]
     )
     assert r[0] == rst_count
 

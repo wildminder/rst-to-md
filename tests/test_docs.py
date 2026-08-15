@@ -35,24 +35,18 @@ def test_contributing_exists():
 def test_napoleon_coupling_documented():
     # IMP-004: the private-name coupling must be documented with a grep-able
     # COUPLING marker in the source, and noted in the design doc.
-    sphinx_src = (
-        REPO_ROOT / "rst_to_md" / "converters" / "sphinx.py"
-    ).read_text("utf-8")
+    sphinx_src = (REPO_ROOT / "rst_to_md" / "converters" / "sphinx.py").read_text("utf-8")
     assert "COUPLING:" in sphinx_src
     assert "sphinx.ext.napoleon._skip_member" in sphinx_src
 
-    design = (
-        REPO_ROOT / "docs" / "design" / "output-conventions.md"
-    ).read_text("utf-8")
+    design = (REPO_ROOT / "docs" / "design" / "output-conventions.md").read_text("utf-8")
     assert "napoleon" in design.lower()
 
 
 def test_backend_split_documented():
     # IMP-005: the intentional two-backend split must be documented, and each
     # converter module must name its own backend in its docstring.
-    design = (
-        REPO_ROOT / "docs" / "design" / "output-conventions.md"
-    ).read_text("utf-8")
+    design = (REPO_ROOT / "docs" / "design" / "output-conventions.md").read_text("utf-8")
     assert "pypandoc" in design
     assert "html_to_markdown" in design
     assert "Two conversion backends" in design
@@ -60,34 +54,26 @@ def test_backend_split_documented():
     rst_src = (REPO_ROOT / "rst_to_md" / "converters" / "rst.py").read_text("utf-8")
     assert "pypandoc" in rst_src
 
-    sphinx_src = (
-        REPO_ROOT / "rst_to_md" / "converters" / "sphinx.py"
-    ).read_text("utf-8")
+    sphinx_src = (REPO_ROOT / "rst_to_md" / "converters" / "sphinx.py").read_text("utf-8")
     assert "html_to_markdown" in sphinx_src
 
 
 def test_docs_mention_caching():
     # NTH-001: incremental caching must be documented.
-    design = (
-        REPO_ROOT / "docs" / "design" / "output-conventions.md"
-    ).read_text("utf-8")
+    design = (REPO_ROOT / "docs" / "design" / "output-conventions.md").read_text("utf-8")
     assert "cache" in design.lower() or "incremental" in design.lower()
 
 
 def test_docs_mention_builder():
     # NTH-006: the Sphinx builder override must be documented.
-    design = (
-        REPO_ROOT / "docs" / "design" / "output-conventions.md"
-    ).read_text("utf-8")
+    design = (REPO_ROOT / "docs" / "design" / "output-conventions.md").read_text("utf-8")
     assert "builder" in design.lower()
 
 
 def test_docs_mention_parallel_build():
     # Performance: the parallel Sphinx build (-j / --build-workers) must be
     # documented, and the CHANGELOG must note it.
-    design = (
-        REPO_ROOT / "docs" / "design" / "output-conventions.md"
-    ).read_text("utf-8")
+    design = (REPO_ROOT / "docs" / "design" / "output-conventions.md").read_text("utf-8")
     assert "build_workers" in design
     assert "-j" in design
 
@@ -98,9 +84,7 @@ def test_docs_mention_parallel_build():
 def test_docs_mention_markdown_builder():
     # P11: the direct Markdown builder (default pipeline) must be documented in
     # the design doc, the CHANGELOG, and the README.
-    design = (
-        REPO_ROOT / "docs" / "design" / "output-conventions.md"
-    ).read_text("utf-8")
+    design = (REPO_ROOT / "docs" / "design" / "output-conventions.md").read_text("utf-8")
     assert "sphinx-markdown-builder" in design
     assert "convert_built_md" in design
     assert "Direct Markdown builder" in design
@@ -120,9 +104,7 @@ def test_docs_mention_markdown_builder():
 def test_docs_mention_vendored_builder():
     # The vendored builder + autodoc formatting fixes (D1/D2/D3) must be
     # documented in the design doc.
-    design = (
-        REPO_ROOT / "docs" / "design" / "output-conventions.md"
-    ).read_text("utf-8")
+    design = (REPO_ROOT / "docs" / "design" / "output-conventions.md").read_text("utf-8")
     assert "rst_to_md/_vendor/sphinx_markdown_builder" in design
     assert "desc_annotation" in design
     assert "Vendored" in design or "vendored" in design
@@ -131,9 +113,7 @@ def test_docs_mention_vendored_builder():
 def test_docs_mention_xref_flattening():
     # XREF: the signature cross-reference flattening must be documented in the
     # design doc (§10.9) and the CHANGELOG.
-    design = (
-        REPO_ROOT / "docs" / "design" / "output-conventions.md"
-    ).read_text("utf-8")
+    design = (REPO_ROOT / "docs" / "design" / "output-conventions.md").read_text("utf-8")
     assert "10.9" in design
     assert "cross-reference" in design.lower()
     assert "desc_depth" in design
@@ -148,9 +128,7 @@ def test_docs_mention_autosummary_enrichment():
     # WS4/WS5: the autosummary source-enrichment (fill empty tables from an AST
     # source map without importing the documented package, and emit generated/
     # stub pages) must be documented in the design doc (§10.10) and the CHANGELOG.
-    design = (
-        REPO_ROOT / "docs" / "design" / "output-conventions.md"
-    ).read_text("utf-8")
+    design = (REPO_ROOT / "docs" / "design" / "output-conventions.md").read_text("utf-8")
     assert "10.10" in design
     assert "autosummary" in design.lower()
     # The key idea: enrichment uses an AST source map, not an import.

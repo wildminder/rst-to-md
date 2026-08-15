@@ -34,9 +34,7 @@ def test_report_lists_per_file_errors(simple_project: Path, tmp_path: Path):
             return False
         return True
 
-    with mock.patch.object(
-        rst_mod, "convert_rst_to_md", side_effect=fake_convert
-    ):
+    with mock.patch.object(rst_mod, "convert_rst_to_md", side_effect=fake_convert):
         convert_directory(simple_project, out, report_path=report)
     data = json.loads(report.read_text(encoding="utf-8"))
     errors = [f for f in data["files"] if f["status"] == "error"]
@@ -55,9 +53,7 @@ def test_sphinx_report_written(sphinx_min_project: Path, tmp_path: Path):
     out = tmp_path / "out"
     report = tmp_path / "report.json"
     with mock.patch("html_to_markdown.convert", return_value="# x\n"):
-        r = convert_sphinx_project(
-            sphinx_min_project, out, report_path=report, use_cache=False
-        )
+        r = convert_sphinx_project(sphinx_min_project, out, report_path=report, use_cache=False)
     assert report.is_file()
     data = json.loads(report.read_text(encoding="utf-8"))
     assert data["summary"]["success"] == r[0]

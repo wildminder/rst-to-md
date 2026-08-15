@@ -190,9 +190,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.sphinx:
         if not check_sphinx_installed():
-            logger.error(
-                "[ERR] Sphinx is not installed. Install with: pip install sphinx"
-            )
+            logger.error("[ERR] Sphinx is not installed. Install with: pip install sphinx")
             return 1
         # Many repositories keep the Sphinx project one level down (e.g.
         # docs/source/conf.py); resolve it so pointing at docs/ works too.

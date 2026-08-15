@@ -70,16 +70,29 @@ def test_license_file_exists():
     assert "MIT License" in (REPO_ROOT / "LICENSE").read_text("utf-8")
 
 
-def test_version_in_init_is_1_2_1():
+def test_version_in_init_matches_changelog():
+    """CRIT-002: the single source of truth (__init__.__version__) must equal
+    the top *released* CHANGELOG entry (the [Unreleased] section is ignored)."""
+    import re
+
     import rst_to_md
 
-    # CRIT-001: runtime version must match the CHANGELOG top entry (1.2.1).
-    assert rst_to_md.__version__ == "1.2.1"
+    changelog = (REPO_ROOT / "CHANGELOG.md").read_text("utf-8")
+    m = re.search(r"^## \[(?!Unreleased)(\d+\.\d+\.\d+)\]", changelog, re.M)
+    assert m, "no released version heading found in CHANGELOG.md"
+    assert rst_to_md.__version__ == m.group(1), (
+        f"__version__ {rst_to_md.__version__} != CHANGELOG top release {m.group(1)}"
+    )
 
 
-def test_pyproject_version_is_1_2_1():
+def test_pyproject_version_is_dynamic():
+    """CRIT-002: pyproject must NOT hardcode a version; it must declare the
+    version dynamic and point hatchling at rst_to_md/__init__.py."""
     data = _load_pyproject()
-    assert data["project"]["version"] == "1.2.1"
+    assert "version" not in data["project"], "static version must be removed"
+    assert "version" in data["project"].get("dynamic", [])
+    hatch = data.get("tool", {}).get("hatch", {}).get("version", {})
+    assert hatch.get("path") == "rst_to_md/__init__.py"
 
 
 def test_version_matches_installed_metadata():
@@ -95,8 +108,49 @@ def test_version_matches_installed_metadata():
 
 
 def test_version_sources_consistent():
+    """CRIT-002 regression guard: runtime version, installed metadata, and the
+    CHANGELOG top release must never drift again."""
+    import importlib.metadata as md
+    import re
+
     import rst_to_md
 
-    # Regression guard: the two version sources must never drift again.
-    data = _load_pyproject()
-    assert rst_to_md.__version__ == data["project"]["version"]
+    changelog = (REPO_ROOT / "CHANGELOG.md").read_text("utf-8")
+    m = re.search(r"^## \[(?!Unreleased)(\d+\.\d+\.\d+)\]", changelog, re.M)
+    assert m and rst_to_md.__version__ == m.group(1)
+    try:
+        assert md.version("rst-to-md") == rst_to_md.__version__
+    except md.PackageNotFoundError:
+        pytest.skip("rst-to-md not installed (editable install required)")
+
+
+def test_wheel_metadata_version_matches_init(tmp_path: Path):
+    """CRIT-002: a real build must stamp the wheel METADATA with __version__.
+    Builds a wheel via `python -m build --wheel` into tmp and parses
+    `Name`/`Version` from the METADATA. Skipped if `build` is unavailable."""
+    import subprocess
+    import sys
+    import zipfile
+
+    try:
+        import build  # noqa: F401
+    except ImportError:
+        pytest.skip("python-build not installed")
+
+    res = subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", "--outdir", str(tmp_path)],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert res.returncode == 0, res.stderr[-2000:]
+    wheels = list(tmp_path.glob("*.whl"))
+    assert len(wheels) == 1
+    with zipfile.ZipFile(wheels[0]) as zf:
+        metadata_names = [n for n in zf.namelist() if n.endswith("METADATA")]
+        assert metadata_names
+        metadata = zf.read(metadata_names[0]).decode("utf-8")
+    import rst_to_md
+
+    assert f"Version: {rst_to_md.__version__}" in metadata
+    assert "Name: rst-to-md" in metadata

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rst-to-md"
-version = "1.2.1"
+dynamic = ["version"]
 description = "Convert reStructuredText (.rst) files and Sphinx projects to Markdown (.md)."
 readme = "README.md"
 license = "MIT"
@@ -43,6 +43,7 @@ dev = [
     "pytest-cov>=4.0",
     "ruff>=0.4",
     "mypy>=1.8",
+    "build>=1.0",
 ]
 
 [project.scripts]
@@ -62,6 +63,10 @@ include = [
     "/LICENSE",
     "/CHANGELOG.md",
 ]
+
+[tool.hatch.version]
+path = "rst_to_md/__init__.py"
+pattern = "__version__\\s*=\\s*\"(?P<version>[^\"]+)\""
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

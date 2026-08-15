@@ -152,9 +152,7 @@ def convert_directory(
         else:  # skipped (cache hit)
             skipped_count += 1
 
-    tracker = ProgressTracker(
-        total=len(rst_files), enabled=show_progress, desc="Converting RST"
-    )
+    tracker = ProgressTracker(total=len(rst_files), enabled=show_progress, desc="Converting RST")
     tracker.start()
 
     # NTH-002: parallel path. Distinct output paths => no write races.

@@ -112,9 +112,7 @@ def _parse_name_cell(cell: str, link_prefix: str):
     return None
 
 
-def _fqn_from_link(
-    target: str, link_prefix: str, bare: str, module_fqn: str | None
-) -> str:
+def _fqn_from_link(target: str, link_prefix: str, bare: str, module_fqn: str | None) -> str:
     stem = target.split("#", 1)[0]
     if stem.endswith(".md"):
         stem = stem[: -len(".md")]
@@ -163,16 +161,12 @@ def _enrich_row(
         return None
 
     info = source_map[fqn]
-    cells[0] = (
-        f"[`{bare}`]({link_prefix}{fqn}.md#{fqn} \"{fqn}\"){info.signature}"
-    )
+    cells[0] = f'[`{bare}`]({link_prefix}{fqn}.md#{fqn} "{fqn}"){info.signature}'
     cells[1] = info.summary
     return "|" + "|".join(f" {c} " for c in cells) + "|"
 
 
-def write_generated_stubs(
-    base_dir, source_map: dict[str, ObjectInfo]
-) -> list[Path]:
+def write_generated_stubs(base_dir, source_map: dict[str, ObjectInfo]) -> list[Path]:
     """Write ``<base_dir>/generated/<fqn>.md`` stub pages for every member.
 
     Each stub page begins with ``# <fqn>`` (the in-page anchor the enriched

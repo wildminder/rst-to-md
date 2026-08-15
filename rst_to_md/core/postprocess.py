@@ -35,9 +35,7 @@ def strip_media(text: str) -> str:
     text = re.sub(r"!\[.*?\]\(media/.*?\)\n?", "", text)
     text = re.sub(r"!\[.*?\]\(_images/.*?\)\n?", "", text)
     text = re.sub(r"<img.*?>", "", text, flags=re.IGNORECASE)
-    text = re.sub(
-        r"<audio.*?>.*?</audio>", "", text, flags=re.IGNORECASE | re.DOTALL
-    )
+    text = re.sub(r"<audio.*?>.*?</audio>", "", text, flags=re.IGNORECASE | re.DOTALL)
     text = re.sub(r"\(plot_.*?\.py\)", "", text)
     text = re.sub(r"\(.*?\.ipynb\)", "", text)
     return text

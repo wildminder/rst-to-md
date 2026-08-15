@@ -1,7 +1,12 @@
-import tempfile, sys
+"""Throwaway end-to-end smoke script (not part of the package or test suite)."""
+
+import sys
+import tempfile
 from pathlib import Path
+
 sys.path.insert(0, ".")
-from rst_to_md.converters.sphinx import convert_sphinx_project
+
+from rst_to_md.converters.sphinx import convert_sphinx_project  # noqa: E402
 
 src = Path("tests/fixtures/sphinx_md_autosummary")
 out = Path(tempfile.mkdtemp(prefix="e2e_out_"))

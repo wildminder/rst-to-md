@@ -68,13 +68,7 @@ def test_strip_empty_anchors_idempotent():
 def test_post_process_markdown_strips_beat_anchor():
     # The shared pipeline must strip ``<a id="..."></a>`` anchors coming from
     # the vendored markdown builder (the user-visible beat.md defect).
-    text = (
-        "# librosa.beat\n"
-        "\n"
-        '<a id="beat"></a>\n'
-        "\n"
-        "Beat tracking functions.\n"
-    )
+    text = '# librosa.beat\n\n<a id="beat"></a>\n\nBeat tracking functions.\n'
     out = post_process_markdown(text)
     assert "<a id=" not in out
     assert "# librosa.beat" in out
@@ -117,12 +111,8 @@ def test_strip_sphinx_chrome_large_on_this_page_toc():
     # A pathological page whose "On this page" TOC is itself huge (e.g. a
     # changelog listing hundreds of versions). The trailing chrome must still
     # be cut even though the marker is far from the end of the file.
-    toc_entries = "\n".join(f"  * [v{ i }](#id{i})" for i in range(300))
-    text = (
-        "# Changelog\n\n"
-        "Some intro text.\n\n"
-        f"# On this page\n\n{toc_entries}\n"
-    )
+    toc_entries = "\n".join(f"  * [v{i}](#id{i})" for i in range(300))
+    text = f"# Changelog\n\nSome intro text.\n\n# On this page\n\n{toc_entries}\n"
     out = strip_sphinx_chrome(text)
     assert out.startswith("# Changelog")
     assert "Some intro text." in out
@@ -279,7 +269,7 @@ def test_post_process_strips_pilcrow_permalink():
     # Sphinx/furo emit heading permalinks as ``[¶](#anchor "Link to this
     # heading")``. The pilcrow must be stripped *before* empty-link cleanup so
     # the anchor becomes an empty link and is removed.
-    text = "# Installation[¶](#installation \"Link to this heading\")\n\nBody\n"
+    text = '# Installation[¶](#installation "Link to this heading")\n\nBody\n'
     out = post_process_markdown(text)
     assert "Link to this heading" not in out
     assert "#installation" not in out
@@ -292,11 +282,7 @@ def test_postprocess_identical_for_both_backends():
     # Markdown fragment is normalized identically regardless of which backend
     # (pypandoc RST->MD or html_to_markdown HTML->MD) produced it.
     fragment = (
-        "Title\r\n\r\n"
-        "![x](_images/a.png)\n"
-        "[Next](next.html)\n"
-        "Body. \n\n\n\n"
-        "© Copyright 2024\n"
+        "Title\r\n\r\n![x](_images/a.png)\n[Next](next.html)\nBody. \n\n\n\n© Copyright 2024\n"
     )
     out1 = post_process_markdown(fragment)
     out2 = post_process_markdown(fragment)

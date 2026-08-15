@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.3] - 2026-08-15
+
 ### Fixed
 - **`TypeError: '<' not supported between instances of 'int' and '_DummyModule'`
   when converting projects whose `conf.py` registers local directives**
@@ -25,6 +27,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   aborting the whole build. Verified end-to-end: the Torchaudio docs
   (`docs/source`) now convert 18 pages with exit code 0. See
   `docs/plans/2026-08-15-fix-local-module-stubbing-directive-crash-plan.md`.
+
+### Changed
+- **Single-sourced the package version** (CRIT-002). `pyproject.toml` now
+  declares `dynamic = ["version"]` and hatchling reads `__version__` from
+  `rst_to_md/__init__.py` at build time — the two sources can no longer
+  drift. Packaging tests now also assert the top CHANGELOG release matches
+  `__version__`.
+- **Declared Python 3.10 as the minimum** (IMP-006): `requires-python`
+  bumped to `>=3.10`, CI matrix drops 3.8/3.9, ruff/mypy targets aligned
+  to 3.10, README badge updated. A `test_ci.py` guard keeps
+  `requires-python`, classifiers, the CI matrix, and the tooling targets
+  in sync.
 
 ## [1.4.2] - 2026-08-12
 

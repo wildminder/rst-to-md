@@ -64,10 +64,10 @@ def test_normalize_removes_headerlinks():
 def test_normalize_keeps_bases_code_links():
     # The Bases: inheritance list renders as <code> (or <a>) which must survive.
     html = (
-        "<p>Bases: <code class=\"xref py py-class docutils literal notranslate\">"
-        "<span class=\"pre\">TelegramMessage</span></code>, "
-        "<code class=\"xref py py-class docutils literal notranslate\">"
-        "<span class=\"pre\">BaseBot</span></code></p>"
+        '<p>Bases: <code class="xref py py-class docutils literal notranslate">'
+        '<span class="pre">TelegramMessage</span></code>, '
+        '<code class="xref py py-class docutils literal notranslate">'
+        '<span class="pre">BaseBot</span></code></p>'
     )
     out = normalize_autodoc_html(html)
     assert "TelegramMessage" in out

@@ -31,5 +31,3 @@ extensions = [
 html_theme = "alabaster"
 master_doc = "index"
 exclude_patterns = ["_build"]
-
-

@@ -332,8 +332,7 @@ def extract_extensions_from_conf(conf_path: Path) -> list[str]:
                         return [
                             elt.value
                             for elt in node.value.elts
-                            if isinstance(elt, ast.Constant)
-                            and isinstance(elt.value, str)
+                            if isinstance(elt, ast.Constant) and isinstance(elt.value, str)
                         ]
     return []
 
@@ -796,9 +795,7 @@ def build_sphinx_html(
         # patched copy is the one loaded.
         vendor_dir = Path(__file__).resolve().parent.parent / "_vendor"
         existing = env.get("PYTHONPATH", "")
-        env["PYTHONPATH"] = (
-            f"{vendor_dir}{os.pathsep}{existing}" if existing else str(vendor_dir)
-        )
+        env["PYTHONPATH"] = f"{vendor_dir}{os.pathsep}{existing}" if existing else str(vendor_dir)
 
     if stub_modules is not None:
         # Only stub modules that are genuinely missing. If a package is
@@ -823,9 +820,7 @@ def build_sphinx_html(
         missing = {m for m in stub_modules if not _is_importable(m)} - local
         mock_set = (stub_modules if mock_all_imports else missing) - local
         if mock_set:
-            cmd.extend(
-                ["-D", "autodoc_mock_imports=" + ",".join(sorted(mock_set))]
-            )
+            cmd.extend(["-D", "autodoc_mock_imports=" + ",".join(sorted(mock_set))])
         # Always install the robustness sitecustomize. It patches
         # napoleon's autodoc-skip-member handler to be exception-safe (some
         # third-party objects, e.g. pydantic models, raise on attribute
@@ -835,9 +830,7 @@ def build_sphinx_html(
         # would crash the build with no protection.
         stub_dir = build_stub_sitecustomize(missing, build_dir / "_stubs")
         existing = env.get("PYTHONPATH", "")
-        env["PYTHONPATH"] = (
-            f"{stub_dir}{os.pathsep}{existing}" if existing else str(stub_dir)
-        )
+        env["PYTHONPATH"] = f"{stub_dir}{os.pathsep}{existing}" if existing else str(stub_dir)
 
     # Filter out plot/gallery/example/ipython options from user opts.
     if sphinx_opts:
@@ -848,8 +841,7 @@ def build_sphinx_html(
                 skip_next = False
                 continue
             if opt.startswith("-D") and any(
-                k in opt
-                for k in ("plot", "ipython", "gallery", "example")
+                k in opt for k in ("plot", "ipython", "gallery", "example")
             ):
                 skip_next = True
                 continue
@@ -885,7 +877,9 @@ def build_sphinx_html(
             _j = next((cmd[i + 1] for i, a in enumerate(cmd) if a == "-j"), None)
             logger.info(
                 "[DIAG] Sphinx build took %.1fs (build_workers=%s, total_cores=%d).",
-                _elapsed, _j or 1, _cpus,
+                _elapsed,
+                _j or 1,
+                _cpus,
             )
         return True
     except subprocess.CalledProcessError as exc:
@@ -1100,9 +1094,7 @@ def convert_sphinx_project(
     """
     show_progress = bool(show_progress)
     if not is_sphinx_project(src_dir):
-        logger.error(
-            "[ERR] %s is not a Sphinx project (missing conf.py)", src_dir
-        )
+        logger.error("[ERR] %s is not a Sphinx project (missing conf.py)", src_dir)
         return 0, 0, 0
 
     build_dir = output_dir / "_sphinx_build"
@@ -1128,11 +1120,7 @@ def convert_sphinx_project(
             rel = src.relative_to(src_dir)
             if rel.parent.name in SKIP_DIRS:
                 continue
-            if any(
-                frag in part
-                for part in map(str, rel.parts)
-                for frag in SKIP_PATH_FRAGMENTS
-            ):
+            if any(frag in part for part in map(str, rel.parts) for frag in SKIP_PATH_FRAGMENTS):
                 continue
             md_path = output_dir / rel.with_suffix(".md")
             logger.info("Would convert: %s -> %s", src, md_path)
@@ -1166,8 +1154,14 @@ def convert_sphinx_project(
     for _attempt, (_gen, _mock_all) in enumerate(_generate_ladder):
         try:
             build_sphinx_html(
-                src_dir, build_dir, sphinx_opts, verbose, lightweight,
-                stub_modules, mock_all_imports=_mock_all, builder=builder,
+                src_dir,
+                build_dir,
+                sphinx_opts,
+                verbose,
+                lightweight,
+                stub_modules,
+                mock_all_imports=_mock_all,
+                builder=builder,
                 build_workers=(build_workers if _attempt == 0 else 1),
                 autosummary_generate=str(_gen),
             )
@@ -1176,7 +1170,9 @@ def convert_sphinx_project(
                 logger.info(
                     "[DIAG] Build phase: %.1fs (parallel build workers=%s, "
                     "autosummary_generate=%s).",
-                    time.perf_counter() - _t_build0, build_workers or "auto", _gen,
+                    time.perf_counter() - _t_build0,
+                    build_workers or "auto",
+                    _gen,
                 )
             break
         except SphinxBuildError:
@@ -1220,11 +1216,7 @@ def convert_sphinx_project(
             return "skipped", ""
         if html_file.parent.name in SKIP_DIRS:
             return "skipped", ""
-        if any(
-            frag in part
-            for part in map(str, html_file.parts)
-            for frag in SKIP_PATH_FRAGMENTS
-        ):
+        if any(frag in part for part in map(str, html_file.parts) for frag in SKIP_PATH_FRAGMENTS):
             return "skipped", ""
         rel_path = html_file.relative_to(html_dir)
         md_path = output_dir / rel_path.with_suffix(".md")
@@ -1272,9 +1264,7 @@ def convert_sphinx_project(
 
     def _record(html_file: Path, status: str, msg: str) -> None:
         nonlocal success_count, error_count, skipped_count
-        file_results.append(
-            {"path": str(html_file), "status": status, "error": msg}
-        )
+        file_results.append({"path": str(html_file), "status": status, "error": msg})
         if status == "ok":
             success_count += 1
         elif status == "error":

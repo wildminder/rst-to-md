@@ -33,8 +33,7 @@ def _beat_map() -> dict[str, ObjectInfo]:
             signature="(*[, y, sr, onset_envelope])",
             summary="Dynamic programming beat tracker.",
             full_docstring=(
-                "Dynamic programming beat tracker.\n\n"
-                "Tracks the beat in an audio time series."
+                "Dynamic programming beat tracker.\n\nTracks the beat in an audio time series."
             ),
             lineno=1,
         ),
@@ -157,12 +156,7 @@ def test_enrich_no_module_context_uses_bare_fqn():
 
 
 def test_enrich_does_not_touch_normal_data_table():
-    md = (
-        "| Name | Description |\n"
-        "|---|---|\n"
-        "| Alice | A person. |\n"
-        "| Bob | Another person. |\n"
-    )
+    md = "| Name | Description |\n|---|---|\n| Alice | A person. |\n| Bob | Another person. |\n"
     out = enrich_autosummary_table(md, "librosa.beat", _beat_map())
     # Ordinary data tables (no backtick name / link in the first cell) are left
     # completely untouched.
@@ -175,9 +169,7 @@ def test_enrich_does_not_touch_normal_data_table():
 def test_extract_module_context_last_currentmodule_wins(tmp_path: Path):
     rst = tmp_path / "page.rst"
     rst.write_text(
-        ".. currentmodule:: a.b\n\n"
-        "Some text.\n\n"
-        ".. currentmodule:: c.d\n",
+        ".. currentmodule:: a.b\n\nSome text.\n\n.. currentmodule:: c.d\n",
         encoding="utf-8",
     )
     assert extract_module_context(rst) == "c.d"
@@ -186,8 +178,7 @@ def test_extract_module_context_last_currentmodule_wins(tmp_path: Path):
 def test_extract_module_context_falls_back_to_automodule(tmp_path: Path):
     rst = tmp_path / "page.rst"
     rst.write_text(
-        ".. automodule:: librosa.feature\n\n"
-        ".. autofunction:: librosa.load\n",
+        ".. automodule:: librosa.feature\n\n.. autofunction:: librosa.load\n",
         encoding="utf-8",
     )
     # No currentmodule; automodule names the module directly.
@@ -228,24 +219,19 @@ def test_write_generated_stubs_anchor_target(tmp_path: Path):
     content = beat_page.read_text(encoding="utf-8")
     assert "# librosa.beat.beat_track" in content
     # The same fqn appears as the link anchor in enriched output.
-    enrich_line = enrich_autosummary_table(
-        "| `beat_track` | |", "librosa.beat", _beat_map()
-    )
-    assert (
-        "generated/librosa.beat.beat_track.md#librosa.beat.beat_track"
-        in enrich_line
-    )
+    enrich_line = enrich_autosummary_table("| `beat_track` | |", "librosa.beat", _beat_map())
+    assert "generated/librosa.beat.beat_track.md#librosa.beat.beat_track" in enrich_line
 
 
 def test_write_generated_stubs_idempotent(tmp_path: Path):
     write_generated_stubs(tmp_path, _beat_map())
-    first = (
-        tmp_path / GENERATED_DIR_NAME / "librosa.beat.beat_track.md"
-    ).read_text(encoding="utf-8")
+    first = (tmp_path / GENERATED_DIR_NAME / "librosa.beat.beat_track.md").read_text(
+        encoding="utf-8"
+    )
     write_generated_stubs(tmp_path, _beat_map())
-    second = (
-        tmp_path / GENERATED_DIR_NAME / "librosa.beat.beat_track.md"
-    ).read_text(encoding="utf-8")
+    second = (tmp_path / GENERATED_DIR_NAME / "librosa.beat.beat_track.md").read_text(
+        encoding="utf-8"
+    )
     assert first == second
 
 
@@ -268,9 +254,7 @@ def _sample_pkg_source_map(tmp_path: Path) -> dict[str, ObjectInfo]:
     pkg = tmp_path / "sample_pkg"
     pkg.mkdir()
     (pkg / "__init__.py").write_text(
-        "def beat_track(y=None, sr=None):\n"
-        '    """Beat tracker."""\n'
-        "    return []\n",
+        'def beat_track(y=None, sr=None):\n    """Beat tracker."""\n    return []\n',
         encoding="utf-8",
     )
     roots = find_source_roots(tmp_path, {"sample_pkg"})

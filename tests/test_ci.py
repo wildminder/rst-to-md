@@ -47,6 +47,5 @@ def test_ruff_mypy_version_aligned():
     mypy_version = f"{mypy.group(1)}.{mypy.group(2)}"  # "3.10"
 
     assert ruff_version == mypy_version, (
-        f"ruff target-version py{ruff_full} ({ruff_version}) != "
-        f"mypy python_version {mypy_version}"
+        f"ruff target-version py{ruff_full} ({ruff_version}) != mypy python_version {mypy_version}"
     )

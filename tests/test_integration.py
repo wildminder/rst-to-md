@@ -103,17 +103,14 @@ def test_sphinx_fallback_recovers_with_mock(tmp_path: Path):
             raise SphinxBuildError("simulated crash")
         html_dir = build_dir / "html"
         html_dir.mkdir(parents=True, exist_ok=True)
-        (html_dir / "index.html").write_text(
-            "<html><body>content</body></html>", encoding="utf-8"
-        )
+        (html_dir / "index.html").write_text("<html><body>content</body></html>", encoding="utf-8")
         return True
 
-    with mock.patch(
-        "rst_to_md.converters.sphinx.build_sphinx_html", side_effect=fake_build
-    ), mock.patch("html_to_markdown.convert", return_value="# x\n"):
-        success, errors, skipped = convert_sphinx_project(
-            _FIXTURE_FALLBACK, out, lightweight=True
-        )
+    with (
+        mock.patch("rst_to_md.converters.sphinx.build_sphinx_html", side_effect=fake_build),
+        mock.patch("html_to_markdown.convert", return_value="# x\n"),
+    ):
+        success, errors, skipped = convert_sphinx_project(_FIXTURE_FALLBACK, out, lightweight=True)
 
     assert success == 1
     assert errors == 0

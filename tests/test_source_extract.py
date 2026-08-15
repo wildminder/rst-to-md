@@ -33,9 +33,7 @@ def test_format_autosummary_signature_required_only():
 
 
 def test_format_autosummary_signature_varargs():
-    assert format_autosummary_signature(_args_of("*args, **kwargs")) == (
-        "(*args, **kwargs)"
-    )
+    assert format_autosummary_signature(_args_of("*args, **kwargs")) == ("(*args, **kwargs)")
 
 
 def test_format_autosummary_signature_kwonly():
@@ -72,9 +70,9 @@ def test_build_source_map_summary_first_sentence(tmp_path: Path):
     pkg = tmp_path / "pkg"
     pkg.mkdir()
     (pkg / "__init__.py").write_text(
-        'def foo():\n'
+        "def foo():\n"
         '    """First sentence here. Second sentence stays out.\n'
-        '\n'
+        "\n"
         '    More body text."""\n'
         "    pass\n",
         encoding="utf-8",
@@ -125,9 +123,7 @@ def test_build_source_map_handles_syntax_error_file(tmp_path: Path):
     pkg = tmp_path / "pkg"
     pkg.mkdir()
     # A valid module (the package __init__).
-    (pkg / "__init__.py").write_text(
-        'def ok():\n    """OK."""\n    pass\n', encoding="utf-8"
-    )
+    (pkg / "__init__.py").write_text('def ok():\n    """OK."""\n    pass\n', encoding="utf-8")
     # A syntactically broken module that must NOT abort the whole map.
     (pkg / "broken.py").write_text("def (((\n", encoding="utf-8")
     # Scan root is the PARENT of the package so fqns keep the ``pkg`` prefix.
