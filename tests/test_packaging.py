@@ -147,9 +147,15 @@ def test_wheel_metadata_version_matches_init(tmp_path: Path):
     wheels = list(tmp_path.glob("*.whl"))
     assert len(wheels) == 1
     with zipfile.ZipFile(wheels[0]) as zf:
-        metadata_names = [n for n in zf.namelist() if n.endswith("METADATA")]
+        names = zf.namelist()
+        metadata_names = [n for n in names if n.endswith("METADATA")]
         assert metadata_names
         metadata = zf.read(metadata_names[0]).decode("utf-8")
+        # NTH-007: the externalized sitecustomize template is package data and
+        # MUST ship inside the wheel or lightweight builds break at runtime.
+        assert "rst_to_md/_templates/sitecustomize.py.tmpl" in names, (
+            "sitecustomize.py.tmpl missing from wheel"
+        )
     import rst_to_md
 
     assert f"Version: {rst_to_md.__version__}" in metadata

@@ -2094,3 +2094,50 @@ def test_stubbed_third_party_directive_does_not_abort_build(
     assert success >= 1
     index_md = (output_dir / "index.md").read_text(encoding="utf-8")
     assert "Normal body content survives." in index_md
+
+
+# --------------------------------------------------------------------------- #
+# NTH-007: externalized sitecustomize template
+# --------------------------------------------------------------------------- #
+def test_sitecustomize_template_file_shape():
+    """The packaged template must exist, be loadable via importlib.resources,
+    and contain exactly one ``__ALLOWED__`` sentinel with no leftover
+    ``.format()`` doubled braces."""
+    from importlib import resources
+
+    template = (
+        resources.files("rst_to_md._templates")
+        .joinpath("sitecustomize.py.tmpl")
+        .read_text(encoding="utf-8")
+    )
+    assert template.count("__ALLOWED__") == 1
+    # No .format()-style doubled braces should survive in the template.
+    assert "{{" not in template
+    assert "}}" not in template
+    # The template must still be a syntactically valid Python module once the
+    # sentinel is substituted with a concrete allow-list literal.
+    import ast
+
+    rendered = template.replace("__ALLOWED__", "{'alpha', 'beta'}")
+    ast.parse(rendered)
+
+
+def test_sitecustomize_rendered_matches_legacy_format(tmp_path: Path):
+    """Rendering through ``build_stub_sitecustomize`` must produce exactly the
+    same bytes as the historical inline ``.format()`` pipeline (regression
+    guard against accidental template drift)."""
+    stub_dir = build_stub_sitecustomize({"beta", "alpha"}, tmp_path / "_stubs")
+    content = (stub_dir / "sitecustomize.py").read_text(encoding="utf-8")
+    # The allow-list literal is rendered sorted with repr().
+    assert "_ALLOWED = {'alpha', 'beta'}" in content
+    # No sentinel or format placeholders may leak into the output.
+    assert "__ALLOWED__" not in content
+    assert "{allowed}" not in content
+
+
+def test_sitecustomize_rendered_empty_allowed(tmp_path: Path):
+    """An empty module set must render an empty allow-list literal."""
+    stub_dir = build_stub_sitecustomize(set(), tmp_path / "_stubs")
+    content = (stub_dir / "sitecustomize.py").read_text(encoding="utf-8")
+    assert "_ALLOWED = {}" in content
+    assert "__ALLOWED__" not in content

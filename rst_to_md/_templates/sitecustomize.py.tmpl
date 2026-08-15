@@ -1,0 +1,297 @@
+import importlib
+import importlib.abc
+import importlib.util
+import sys
+import types
+
+_ALLOWED = __ALLOWED__
+_STUBBED = set()
+
+
+# Dunders a real module does not define and that must raise AttributeError so
+# Python/Sphinx internals (e.g. isstaticmethod's getattr(cls, '__mro__')) fall
+# back to sane defaults instead of recursing or crashing on a dummy module.
+_DUMMY_RAISE_DUNDERS = frozenset({
+    "__mro__", "__bases__", "__class__", "__subclasses__", "__instancecheck__",
+    "__subclasshook__", "__getattribute__", "__setattr__", "__delattr__",
+    "__call__", "__init__", "__new__", "__repr__", "__str__", "__format__",
+    "__getitem__", "__setitem__", "__iter__", "__next__", "__len__",
+    "__contains__", "__eq__", "__hash__", "__lt__", "__le__", "__gt__",
+    "__ge__", "__bool__", "__dir__", "__get__", "__set__", "__delete__",
+    "__enter__", "__exit__", "__aenter__", "__aexit__", "__await__",
+    "__aiter__", "__anext__", "__qualname__", "__module__", "__slots__",
+    "__weakref__", "__abstractmethods__", "__metaclass__", "__func__",
+    "__self__", "__code__", "__closure__", "__wrapped__", "__reduce__",
+    "__reduce_ex__", "__getstate__", "__setstate__", "__init_subclass__",
+    "__class_getitem__", "__match_args__", "__parameters__", "__origin__",
+    "__args__", "__type_params__", "__all__", "__members__", "__methods__",
+    "__warningregistry__", "__getattr__",
+})
+
+# Package metadata dunders that conf.py legitimately reads (e.g.
+# ``release = aiogram.__version__``) and that resolve to a nested dummy module.
+_DUMMY_METADATA_DUNDERS = frozenset({
+    "__version__", "__version_info__", "__api_version__", "__api_version_info__",
+    "__author__", "__authors__", "__title__", "__copyright__", "__license__",
+    "__summary__", "__uri__", "__url__", "__homepage__", "__description__",
+    "__email__", "__maintainer__", "__release__",
+})
+
+
+class _DummyModule(types.ModuleType):
+    """Module-like object returning nested dummies for any attribute."""
+
+    def __init__(self, name):
+        super().__init__(name)
+        # Provide real module dunders so repr()/introspection does not recurse
+        # or crash. importlib._module_repr accesses __file__; if it is missing,
+        # __getattr__ would return another dummy and recurse forever
+        # (RecursionError). Setting them to sane values short-circuits that.
+        self.__file__ = None
+        self.__cached__ = None
+        self.__package__ = name.rpartition(".")[0] or ""
+        self.__loader__ = None
+        self.__spec__ = None
+        self.__doc__ = None
+        self.__annotations__ = {}
+        self.__builtins__ = {}
+        self.__path__ = []
+
+    def __getattr__(self, name):
+        # Single-underscore dunders must raise normally so Python internals
+        # keep working.
+        if name.startswith("__") and not name.endswith("__"):
+            raise AttributeError(name)
+        # Dunder-double attributes: known package metadata resolves to a
+        # placeholder string; everything else (class-protocol dunders such as
+        # __mro__/__bases__, and any unknown dunder) raises AttributeError so
+        # Sphinx/Python fall back to sane defaults instead of crashing.
+        if name.startswith("__") and name.endswith("__"):
+            if name in _DUMMY_METADATA_DUNDERS:
+                # Package metadata (e.g. __version__) is used by conf.py as a
+                # string (release = pkg.__version__) and by Sphinx config
+                # validation / prepare_writing which requires a str. Return a
+                # placeholder string so config values stay strings and autodoc
+                # introspection (cls is the parent module, never the str) is
+                # safe.
+                return "0.0.0"
+            raise AttributeError(name)
+        # Normal (non-dunder) attributes resolve to a nested dummy module so
+        # submodule imports (e.g. ``import aiogram.Bot``) and autodoc references
+        # keep working.
+        child = self.__name__ + "." + name
+        mod = sys.modules.get(child)
+        if mod is None:
+            mod = _DummyModule(child)
+            sys.modules[child] = mod
+        return mod
+
+    def __call__(self, *args, **kwargs):
+        # Some conf.py files CALL a stubbed import at module-execution time
+        # (e.g. librosa: ``from cycler import cycler; cycler("color", [...])``).
+        # Without __call__ this raises TypeError: '_DummyModule' object is not
+        # callable and aborts the entire Sphinx build during conf.py parsing.
+        # Return a nested dummy so the call succeeds; the result is typically
+        # stored in a config dict (e.g. plot_rcparams) that is never used in
+        # lightweight mode (plot directives are disabled).
+        return _DummyModule(self.__name__ + "()")
+
+    def __iter__(self):
+        # The result of calling a stub (e.g. matplotlib's cycler) may be
+        # iterated over at conf.py execution time. Return an empty iterator so
+        # ``for x in cycler(...)`` does not crash.  Note: unpacking
+        # ``a, b, c = stub()`` will still fail with ValueError because we
+        # cannot know the expected count; this is an inherent limitation of
+        # stubbing — the documented package's real dependencies must be
+        # installed for full autodoc content.
+        return iter(())
+
+
+class _StubLoader(importlib.abc.Loader):
+    def create_module(self, spec):
+        mod = _DummyModule(spec.name)
+        mod.__path__ = []  # treat as a package so submodule imports work
+        return mod
+
+    def exec_module(self, module):
+        return None
+
+
+class _SubmoduleStubFinder(importlib.abc.MetaPathFinder):
+    """Stub submodules of genuinely-missing top-level packages.
+
+    Only acts on dotted names whose top-level package was actually stubbed,
+    so real modules (e.g. datetime) are never overridden.
+    """
+
+    def find_spec(self, name, path, target=None):
+        if "." not in name:
+            return None
+        top = name.split(".")[0]
+        if top in _STUBBED:
+            return importlib.util.spec_from_loader(name, _StubLoader())
+        return None
+
+
+def _install_lazy_loader_stub():
+    """Provide a *real* ``lazy_loader`` module when it is missing.
+
+    Many scientific Python packages (numpy, scipy, librosa, ...) use
+    ``lazy_loader.attach_stub(__name__, __file__)`` in their ``__init__.py``,
+    which unpacks a 3-tuple::
+
+        __getattr__, __dir__, __all__ = lazy.attach_stub(__name__, __file__)
+
+    A generic ``_DummyModule`` cannot support arbitrary-length tuple
+    unpacking (Python's protocol requires knowing the exact count), so the
+    import of the *documented* package fails and autodoc produces empty
+    output.  Instead of a dummy, we inject a real module with a working
+    ``attach_stub()`` that returns a proper 3-tuple of callables/list.
+
+    MUST run before ``_install_stubs`` so the latter's
+    ``importlib.import_module("lazy_loader")`` finds the real stub instead
+    of creating a ``_DummyModule``.
+    """
+    if "lazy_loader" not in _ALLOWED:
+        return
+    # Check if the *real* lazy_loader is importable (not a prior dummy).
+    existing = sys.modules.get("lazy_loader")
+    if existing is not None and not isinstance(existing, _DummyModule):
+        return  # real lazy_loader already available
+
+    mod = types.ModuleType("lazy_loader")
+    mod.__path__ = []
+    mod.__file__ = None
+    mod.__doc__ = "Stub lazy_loader for lightweight Sphinx builds."
+
+    def attach_stub(name, file):
+        """Return ``(__getattr__, __dir__, __all__)`` for a stubbed package.
+
+        Mirrors ``lazy_loader.attach_stub``'s contract: the caller unpacks
+        the result into module-level ``__getattr__``, ``__dir__``, and
+        ``__all__``.  We return dummies that allow the package to import
+        without crashing; autodoc content may still be limited because the
+        real package's dependencies are not installed.
+        """
+        def _getattr(attr_name):
+            # Resolve submodule access (e.g. librosa.beat) to a dummy so
+            # ``import librosa; librosa.beat`` does not crash.
+            child = name + "." + attr_name
+            existing_child = sys.modules.get(child)
+            if existing_child is not None:
+                return existing_child
+            dummy = _DummyModule(child)
+            dummy.__path__ = []
+            sys.modules[child] = dummy
+            return dummy
+
+        def _dir():
+            return []
+
+        return _getattr, _dir, []
+
+    mod.attach_stub = attach_stub
+    # Also provide ``load()`` and ``attach()`` which some packages use.
+    def _load(*args, **kwargs):
+        return _DummyModule("lazy_loader.load()")
+
+    def _attach(*args, **kwargs):
+        pass
+
+    mod.load = _load
+    mod.attach = _attach
+    sys.modules["lazy_loader"] = mod
+    _STUBBED.add("lazy_loader")
+
+
+# Install the lazy_loader stub FIRST so _install_stubs sees it and does
+# not replace it with a generic _DummyModule.
+_install_lazy_loader_stub()
+
+
+def _install_stubs():
+    # Only stub modules that are genuinely missing. Real modules (stdlib or
+    # third-party) are imported normally so they are never overridden.
+    for name in _ALLOWED:
+        try:
+            importlib.import_module(name)
+        except ImportError:
+            mod = _DummyModule(name)
+            mod.__path__ = []
+            sys.modules[name] = mod
+            _STUBBED.add(name)
+
+
+_install_stubs()
+sys.meta_path.insert(0, _SubmoduleStubFinder())
+
+# ---------------------------------------------------------------------------
+# Robustness: make napoleon's autodoc-skip-member handler exception-safe.
+#
+# COUPLING: this monkeypatches the PRIVATE name ``sphinx.ext.napoleon._skip_member``
+# (see IMP-004). If a future Sphinx release renames or removes it, the ``try``
+# below silently no-ops and the crash returns. A test
+# (tests/test_sphinx_converter.py::test_napoleon_skip_member_exists) fails loudly
+# if the name disappears. Prefer a registered ``autodoc-skip-member`` extension
+# over this monkeypatch when Sphinx internals change.
+#
+# Some third-party objects (notably pydantic models) raise when their
+# attributes are accessed during autodoc member gathering. For example
+# napoleon's _skip_member does ``getattr(obj, "__qualname__", "")`` which, on a
+# pydantic model, triggers a model rebuild that can fail with
+# PydanticSchemaGenerationError. The default handler does not guard against
+# this, so a single problematic member aborts the ENTIRE Sphinx build and the
+# converter produces no output at all. We wrap the handler so such members are
+# simply skipped instead of crashing the build.
+# ---------------------------------------------------------------------------
+try:
+    import sphinx.ext.napoleon as _napoleon
+
+    _orig_skip_member = _napoleon._skip_member
+
+    def _safe_skip_member(app, what, name, obj, skip, options):
+        try:
+            return _orig_skip_member(app, what, name, obj, skip, options)
+        except Exception:  # noqa: BLE001 - never let one member abort the build
+            # Skip the offending member rather than crash the whole build.
+            return True
+
+    _napoleon._skip_member = _safe_skip_member
+except Exception:  # noqa: BLE001 - napoleon may be unavailable in some setups
+    pass
+
+# ---------------------------------------------------------------------------
+# Robustness: never let a single broken directive abort the whole build.
+#
+# COUPLING: monkeypatches docutils.parsers.rst.states.Body.run_directive.
+# tests/test_sphinx_converter.py::test_docutils_run_directive_exists fails
+# loudly if the name disappears.
+#
+# A directive class can be unusable at parse time: e.g. conf.py registers a
+# class imported from a stubbed (missing) third-party module -- then
+# ``directive.required_arguments`` is a _DummyModule and docutils raises
+# TypeError -- or a real directive raises at runtime (network, missing files).
+# Convert any such failure into an ERROR system message (level 3, below the
+# default halt_level of 4, so it does NOT raise SystemMessage and halt) so the
+# rest of the document set still converts.
+# ---------------------------------------------------------------------------
+try:
+    from docutils.parsers.rst import states as _rst_states
+
+    _orig_run_directive = _rst_states.Body.run_directive
+
+    def _safe_run_directive(self, directive, match, type_name, option_presets):
+        try:
+            return _orig_run_directive(
+                self, directive, match, type_name, option_presets)
+        except Exception:  # noqa: BLE001 - one directive must not kill the build
+            lineno = self.state_machine.abs_line_number()
+            msg = self.reporter.error(
+                'Directive "%s" failed to render; its definition may be '
+                'stubbed or broken.' % type_name,
+                line=lineno)
+            return [msg], True
+
+    _rst_states.Body.run_directive = _safe_run_directive
+except Exception:  # noqa: BLE001 - docutils internals may change
+    pass

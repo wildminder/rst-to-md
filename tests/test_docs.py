@@ -34,10 +34,14 @@ def test_contributing_exists():
 
 def test_napoleon_coupling_documented():
     # IMP-004: the private-name coupling must be documented with a grep-able
-    # COUPLING marker in the source, and noted in the design doc.
-    sphinx_src = (REPO_ROOT / "rst_to_md" / "converters" / "sphinx.py").read_text("utf-8")
-    assert "COUPLING:" in sphinx_src
-    assert "sphinx.ext.napoleon._skip_member" in sphinx_src
+    # COUPLING marker in the source, and noted in the design doc.  Since
+    # NTH-007 the sitecustomize stub (which carries the napoleon coupling)
+    # lives in the externalized template rather than inline in sphinx.py.
+    template_src = (REPO_ROOT / "rst_to_md" / "_templates" / "sitecustomize.py.tmpl").read_text(
+        "utf-8"
+    )
+    assert "COUPLING:" in template_src
+    assert "sphinx.ext.napoleon._skip_member" in template_src
 
     design = (REPO_ROOT / "docs" / "design" / "output-conventions.md").read_text("utf-8")
     assert "napoleon" in design.lower()
