@@ -1,6 +1,7 @@
 <div id="readme-top"></div>
 <div align="center">
-# RST to Markdown Converter
+
+# ≡ RST to Markdown Converter ≡
 
 A command-line tool to convert reStructuredText (`.rst`) files and full Sphinx documentation projects to clean Markdown (`.md`) — without installing the documented package or heavy Sphinx extensions.
 
@@ -315,7 +316,7 @@ make test      # pytest with coverage
 
 <!-- ===================== BADGE DEFINITIONS (reference-style) ===================== -->
 
-[python-shield]: https://img.shields.io/badge/Python-3.10%2B-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54
+[python-shield]: https://img.shields.io/badge/python-3.10%2B-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54
 [python-url]: https://www.python.org/
 [version-shield]: https://img.shields.io/badge/version-1.4.3-informational?style=for-the-badge
 [version-url]: CHANGELOG.md
