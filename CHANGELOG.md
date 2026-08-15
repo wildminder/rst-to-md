@@ -27,6 +27,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   aborting the whole build. Verified end-to-end: the Torchaudio docs
   (`docs/source`) now convert 18 pages with exit code 0. See
   `docs/plans/2026-08-15-fix-local-module-stubbing-directive-crash-plan.md`.
+- **`generated/` autosummary stubs are written once, race-free** (IMP-007):
+  with `--workers > 1`, every enriched file previously called
+  `write_generated_stubs` for the entire source map inside the
+  `ThreadPoolExecutor`, so N threads wrote the same `generated/<fqn>.md`
+  files concurrently. Stubs are now written **once** in
+  `convert_sphinx_project` before the parallel loop; per-file `enrich_file`
+  only enriches tables (`write_stubs=False`). A spy test asserts a single
+  write call and a serial-vs-parallel test asserts byte-identical stubs.
 
 ### Changed
 - **Single-sourced the package version** (CRIT-002). `pyproject.toml` now
@@ -39,6 +47,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to 3.10, README badge updated. A `test_ci.py` guard keeps
   `requires-python`, classifiers, the CI matrix, and the tooling targets
   in sync.
+- **Externalized the sitecustomize stub template** (NTH-007): the ~300-line
+  inline `.format()` string now lives in
+  `rst_to_md/_templates/sitecustomize.py.tmpl`, loaded via
+  `importlib.resources` with a single `__ALLOWED__` sentinel substitution.
+  Rendering is byte-identical to the previous output; the template ships as
+  package data (asserted by a wheel test).
+- **Enforced a coverage floor** (NTH-008): `[tool.coverage.report]
+  fail_under = 68` (baseline 69.18%) now fails any `pytest --cov` run that
+  drops below the floor, in CI and locally.
+- **Refreshed the README "Project Structure" tree** (NTH-009) to include
+  `_templates/`, `_vendor/`, and all `core/` modules; a docs test now fails
+  if any first-party module is missing from the tree.
 
 ## [1.4.2] - 2026-08-12
 
