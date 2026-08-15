@@ -189,19 +189,26 @@ In lightweight mode the tool:
 ```
 rst-to-md/
 ├── rst_to_md/
-│   ├── __init__.py          # Public API + version
+│   ├── __init__.py          # Public API + version (single source of truth)
 │   ├── __main__.py          # `python -m rst_to_md` entry point
 │   ├── cli.py               # Argument parsing + dispatch
 │   ├── config.py            # Conversion policy constants
 │   ├── exceptions.py        # Custom exceptions
 │   ├── py.typed             # PEP 561 marker
+│   ├── _templates/
+│   │   └── sitecustomize.py.tmpl  # Import-stub template for lightweight builds
+│   ├── _vendor/
+│   │   └── sphinx_markdown_builder/  # Vendored Markdown builder (patched)
 │   ├── core/
+│   │   ├── autosummary_enrich.py  # Autosummary table enrichment + stubs
+│   │   ├── cache.py         # Incremental mtime-based skip
+│   │   ├── html_clean.py    # HTML artifact cleanup
 │   │   ├── logging.py       # Logging setup
 │   │   ├── postprocess.py   # Pure Markdown cleanup (idempotent)
-│   │   ├── cache.py         # Incremental mtime-based skip
-│   │   └── progress.py      # Live TTY progress line
+│   │   ├── progress.py      # Live TTY progress line
+│   │   └── source_extract.py  # AST-based source/docstring extraction
 │   └── converters/
-│       ├── rst.py           # Simple RST -> MD
+│       ├── rst.py           # Simple RST -> MD (pypandoc)
 │       └── sphinx.py        # Sphinx build + HTML/MD -> MD
 ├── tests/                   # Unit + integration tests and fixtures
 ├── docs/plans/              # Implementation plans

@@ -162,3 +162,23 @@ def test_readme_badge_matches_requires_python():
     minimum = m.group(1)
     readme = (REPO_ROOT / "README.md").read_text("utf-8")
     assert f"python-{minimum}%2B" in readme, f"README badge must advertise python-{minimum}+"
+
+
+def test_readme_structure_lists_all_modules():
+    """NTH-009: the README 'Project Structure' tree must stay in sync with the
+    actual first-party modules. Every non-vendored ``.py`` module under
+    ``rst_to_md/`` must be named in the README so the tree cannot silently
+    drift when a module is added."""
+    readme = (REPO_ROOT / "README.md").read_text("utf-8")
+    pkg = REPO_ROOT / "rst_to_md"
+    missing = []
+    for py in sorted(pkg.rglob("*.py")):
+        rel = py.relative_to(pkg)
+        # Skip vendored third-party code and package markers.
+        if rel.parts and rel.parts[0] == "_vendor":
+            continue
+        if py.name in {"__init__.py", "__main__.py"}:
+            continue
+        if py.name not in readme:
+            missing.append(str(rel))
+    assert not missing, f"README structure tree is missing modules: {missing}"
