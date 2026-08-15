@@ -1,48 +1,108 @@
+<div id="readme-top"></div>
+
 # RST to Markdown Converter
 
-[![CI](https://github.com/wildminder/rst-to-md/actions/workflows/ci.yml/badge.svg)](https://github.com/wildminder/rst-to-md/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
-
 A command-line tool to convert reStructuredText (`.rst`) files and full Sphinx
-documentation projects to clean Markdown (`.md`).
+documentation projects to clean Markdown (`.md`) — without installing the
+documented package or heavy Sphinx extensions.
 
-## Features
+[![Python][python-shield]][python-url]
+[![Version][version-shield]][version-url]
+[![CI][ci-shield]][ci-url]
+[![License: MIT][license-shield]][license-url]
+[![Code style: ruff][ruff-shield]][ruff-url]
 
-- ✅ **Dual conversion modes**: simple RST files OR full Sphinx projects
-- ✅ **Lightweight Sphinx mode**: no need to install the documented package or
-  heavy extensions (plot/gallery/ipython) — missing imports are stubbed and
-  autodoc imports are mocked automatically
-- ✅ **Pure markdown output**: Sphinx projects are rendered directly to Markdown
-  via a **vendored, patched** `sphinx-markdown-builder` (no HTML round-trip);
-  simple RST files use `html-to-markdown` (with a pandoc fallback). Both paths
-  are post-processed to remove navigation, footers, and broken media links. The
-  vendored builder's `MarkdownTranslator` is patched so autodoc blocks
-  (`autoclass`/`automethod`) render field lists as bold labels, `property`/`class`
-  annotations as plain text, and member signatures as bold paragraphs — matching
-  the legacy `html` builder. Use `--builder html` to fall back to the legacy
-  `rst → HTML → Markdown` pipeline.
-- ✅ **Fast, parallel builds**: the Sphinx build runs on all CPU cores by default
-  (`-j N`, see `--build-workers`); post-build conversion is parallelized via
-  `--workers N`. A live progress line shows `N/total | elapsed | ok/err/skip | rate`.
-- ✅ **Incremental caching**: a `.md` is skipped when its source is not newer than
-  the existing output (`--no-cache` to force a full reconvert).
-- ✅ **CI-friendly reporting**: `--report report.json` writes a machine-readable
-  summary with per-file status/errors; `--dry-run` previews the planned work.
-- ✅ **Resilient to third-party quirks**: a `sitecustomize.py` makes Sphinx's
-  `napoleon` extension exception-safe, and a mock-all fallback (`IMP-001`) still
-  produces output if an extension crashes the build.
-- ✅ **Recursive directory conversion** with preserved structure
-- ✅ **Deterministic output**: files are processed in sorted order and the
-  post-processing pipeline is idempotent
-- ✅ **Multiple formats** for simple mode: GFM, standard markdown, strict markdown
-- ✅ **Configurable wrapping options**
+<p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
 
-> **Note on performance:** `html-to-markdown` is a pure-Python package. For very
-> large projects the pandoc fallback is also available. The conversion speed
-> therefore depends on the size of the generated HTML, not a Rust core.
+## ❯ Table of Contents
 
-## Installation
+1. [About](#about)
+2. [Features](#features)
+3. [Getting Started](#getting-started)
+   - [Prerequisites](#prerequisites)
+   - [Installation](#installation)
+4. [Usage](#usage)
+5. [Options](#options)
+6. [How It Works](#how-it-works)
+   - [Simple Mode](#simple-mode)
+   - [Sphinx Mode](#sphinx-mode)
+7. [Project Structure](#project-structure)
+8. [Development](#development)
+9. [Contributing](#contributing)
+10. [License](#license)
+
+<p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
+
+## ❯ About
+
+Sphinx documentation is everywhere, but Markdown is what modern tooling
+consumes — LLMs, READMEs, static sites, and docs mirrors. Converting a Sphinx
+project by hand means fighting theme chrome, broken cross-references, and
+autodoc output that pandoc mangles.
+
+`rst-to-md` converts entire RST trees or full Sphinx projects straight to
+Markdown. In Sphinx mode it builds the doctree with a **vendored, patched**
+`sphinx-markdown-builder`, stubs any missing imports, and strips theme
+navigation — so you get the documentation body only, with autodoc signatures,
+field lists, and `.md` cross-references intact.
+
+<p align="right"><a href="#readme-top">⟔ ▲ ⟓ back to top</a></p>
+
+<p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
+
+## ❯ Features
+
+- ▸ **Dual conversion modes** — simple RST files (pypandoc) or full Sphinx
+  projects.
+- ▸ **Lightweight Sphinx mode** — no need to install the documented package or
+  heavy extensions (plot/gallery/ipython); missing imports are stubbed and
+  autodoc imports are mocked automatically.
+- ▸ **Pure Markdown output** — Sphinx projects render directly to Markdown via
+  the vendored builder (no HTML round-trip). Autodoc blocks render field lists
+  as bold labels and member signatures as bold paragraphs, matching the legacy
+  `html` builder. Use `--builder html` for the legacy `rst → HTML → Markdown`
+  pipeline.
+- ▸ **Fast, parallel builds** — the Sphinx build runs on all CPU cores by
+  default (`--build-workers`), and post-build conversion parallelizes via
+  `--workers N`. A live progress line shows `N/total | elapsed | ok/err/skip`.
+- ▸ **Incremental caching** — a `.md` is skipped when its source is not newer
+  than the existing output (`--no-cache` to force a full reconvert).
+- ▸ **CI-friendly reporting** — `--report report.json` writes a
+  machine-readable summary with per-file status/errors; `--dry-run` previews
+  the planned work.
+- ▸ **Resilient to third-party quirks** — a `sitecustomize.py` makes Sphinx's
+  `napoleon` extension exception-safe, and a mock-all fallback (`IMP-001`)
+  still produces output if an extension crashes the build.
+- ▸ **Clean output by default** — theme chrome (sidebar TOC, footer,
+  permalinks, front matter) is stripped; `--keep-chrome` preserves it.
+- ▸ **Recursive directory conversion** with preserved structure, deterministic
+  sorted processing, and idempotent post-processing.
+- ▸ **Multiple formats** for simple mode (`gfm`, `markdown`,
+  `markdown_strict`) with configurable wrapping.
+
+> [!NOTE]
+> `html-to-markdown` is a pure-Python package, and a pandoc fallback is
+> available for very large projects. Conversion speed depends on the size of
+> the generated HTML, not a Rust core.
+
+<p align="right"><a href="#readme-top">⟔ ▲ ⟓ back to top</a></p>
+
+<p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
+
+## ❯ Getting Started
+
+### ⌬ Prerequisites
+
+- **Python 3.10+** — the tool targets `py310` and newer.
+- **pandoc** — bundled via the `pypandoc-binary` dependency (simple mode).
+- **Sphinx** — installed as a runtime dependency (Sphinx mode).
+
+The `sphinx-markdown-builder` extension is **vendored** inside the package
+(`rst_to_md/_vendor/`), so it is not a separate install.
+
+<p align="center">◇ ◇ ◇ ◇ ◇</p>
+
+### ⌬ Installation
 
 ```bash
 # Using uv (recommended)
@@ -53,11 +113,14 @@ pip install -e ".[dev]"   # includes dev tools (pytest, ruff, mypy)
 pip install -e .          # runtime only
 ```
 
-Runtime dependencies: `pypandoc` (+ `pypandoc-binary`), `sphinx`, and
-`html-to-markdown`. The `sphinx-markdown-builder` extension is **vendored**
-inside the package (`rst_to_md/_vendor/`), so it is not a separate install.
+Runtime dependencies: `pypandoc` (+ `pypandoc-binary`), `sphinx`,
+`html-to-markdown`, and `beautifulsoup4`.
 
-## Usage
+<p align="right"><a href="#readme-top">⟔ ▲ ⟓ back to top</a></p>
+
+<p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
+
+## ❯ Usage
 
 ```bash
 # Simple RST directory
@@ -74,79 +137,71 @@ rst-to-md ./librosa/docs ./out_docs --sphinx --no-lightweight
 python -m rst_to_md docs md_docs --verbose
 ```
 
-### Options
+> [!TIP]
+> In Sphinx mode the output is stripped of theme-generated navigation chrome —
+> YAML front matter, sidebar TOC, theme icons/logo, "Back to top"/"View this
+> page" links, footer navigation, copyright line, "On this page" TOC, and `¶`
+> heading permalinks. Pass `--keep-chrome` to preserve all of it.
 
-```
-usage: rst-to-md [-h] [-w {none,auto,preserve}] [-f {gfm,markdown,markdown_strict}]
-                [-v] [--version] [--sphinx] [--sphinx-opts ...] [--no-clean]
-                [--lightweight] [--no-lightweight] [--keep-chrome]
-                input_dir [output_dir]
+<p align="right"><a href="#readme-top">⟔ ▲ ⟓ back to top</a></p>
+
+<p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
+
+## ❯ Options
+
+```text
+usage: rst-to-md [-h] [-w {none,auto,preserve}]
+                 [-f {gfm,markdown,markdown_strict}] [-v] [--version]
+                 [--sphinx] [--sphinx-opts [SPHINX_OPTS ...]] [--no-clean]
+                 [--lightweight] [--no-lightweight] [--keep-chrome]
+                 [--no-cache] [--workers WORKERS] [--report REPORT]
+                 [--dry-run] [-b BUILDER] [--no-progress]
+                 [--build-workers BUILD_WORKERS]
+                 [--autosummary-generate {auto,true,false}]
+                 input_dir [output_dir]
 ```
 
 | Option | Description |
-|--------|-------------|
+| ------ | ----------- |
 | `input_dir` | Directory with `.rst` files (or a Sphinx project containing `conf.py`) |
 | `output_dir` | Output directory (default: `<input_dir>_md`) |
-| `-w/--wrap` | Pandoc wrap option: `none`, `auto`, `preserve` (simple mode) |
-| `-f/--format` | Output format for **simple mode**: `gfm`, `markdown`, `markdown_strict` |
-| `-v/--verbose` | Verbose logging |
+| `-w, --wrap` | Pandoc wrap option: `none`, `auto`, `preserve` (simple mode) |
+| `-f, --format` | Output format for **simple mode**: `gfm`, `markdown`, `markdown_strict` |
+| `-v, --verbose` | Verbose logging |
 | `--sphinx` | Sphinx-aware conversion |
 | `--sphinx-opts` | Extra options forwarded to `sphinx-build` |
-| `--builder NAME` | Sphinx builder to use (default `markdown`; `html` = legacy `rst → HTML → Markdown`) |
+| `-b, --builder` | Sphinx builder (default `markdown`; `html` = legacy `rst → HTML → Markdown`) |
 | `--build-workers N` | Parallel Sphinx build workers: `0` = auto (CPU count), `1` = serial (default `0`) |
-| `--autosummary-generate {auto,true,false}` | Autosummary stub-page generation (default `auto`): `auto` generates real tables only when the documented package is importable, `true` always (may crash if the package is missing), `false` always stubs and enriches the table from the package source tree (no import required). |
+| `--autosummary-generate` | `auto` (default): only if importable; `true`: always; `false`: stub + enrich from source |
 | `--workers N` | Parallel post-build conversion workers (default `1`, serial) |
 | `--no-clean` | Keep the Sphinx build directory |
 | `--lightweight` / `--no-lightweight` | Toggle lightweight mode (default ON) |
-| `--keep-chrome` | Keep Sphinx/theme navigation chrome (sidebar TOC, footer, "On this page" TOC, heading permalinks). Default: stripped for clean Markdown. |
+| `--keep-chrome` | Keep Sphinx/theme navigation chrome (stripped by default) |
 | `--no-cache` | Disable incremental caching (reconvert every file) |
 | `--report PATH` | Write a JSON summary (counts + per-file errors) to `PATH` |
 | `--dry-run` | List the planned `src -> dst` work and convert nothing |
 | `--no-progress` | Disable the live progress line |
 
-> **Sphinx mode & `--format`/`--wrap`:** In Sphinx mode the HTML→Markdown step
-> uses `html-to-markdown`, which does not expose format/wrap knobs; these options
-> only affect simple (pypandoc) mode.
+> [!NOTE]
+> In Sphinx mode the HTML→Markdown step uses `html-to-markdown`, which does
+> not expose format/wrap knobs; `--format` and `--wrap` only affect simple
+> (pypandoc) mode.
 
-> **Clean output by default:** In Sphinx mode the generated Markdown is stripped
-> of theme-generated navigation chrome — the YAML front matter, the global
-> sidebar table of contents, theme icons/logo, "Back to top"/"View this page"
-> links, the footer navigation (Previous/Next), the copyright line, the local
-> "On this page" table of contents, and the `¶` heading permalinks. Pass
-> `--keep-chrome` to preserve all of it.
+<p align="right"><a href="#readme-top">⟔ ▲ ⟓ back to top</a></p>
 
-> **Autodoc content is preserved:** The documentation body is extracted from
-> the page's content container (`<main>` / `<article>`) *before* conversion, so
-> `autoclass` / `autofunction` output is kept intact — class signatures, the
-> `Bases:` inheritance list, members (`:members:`, `:special-members:`,
-> `:undoc-members:`), and the `Parameters:` / `Raises:` / `Returns:` field
-> lists. Signature parameters are emitted as code spans (e.g. `` `**kwargs` ``)
-> rather than being mangled by Markdown emphasis. Cross-reference links (base
-> classes, methods) are rewritten from `.html` to `.md`.
+<p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
 
-> **Inheritance requires the documented package:** In lightweight mode a
-> missing package is mocked so the build can succeed, but a *mocked* package
-> has no real class hierarchy, so `:show-inheritance:` yields an empty
-> `Bases:` line. To keep the inheritance list, install the package you are
-> documenting (e.g. `pip install aiogram`) — the converter never mocks a
-> package that is actually importable, so autodoc then resolves the real
-> `Bases:` and member signatures.
+## ❯ How It Works
 
-> **Resilient to third-party quirks:** Some libraries (e.g. pydantic models)
-> raise when their attributes are accessed during autodoc member gathering,
-> which would otherwise abort the entire Sphinx build. The converter installs a
-> small `sitecustomize.py` that makes Sphinx's `napoleon` extension
-> exception-safe, so such members are skipped instead of crashing the build.
-
-## How It Works
-
-### Simple mode
+### ⌬ Simple Mode
 
 1. Recursively find all `.rst` files (in sorted order).
 2. Convert each with pypandoc.
 3. Post-process: normalize line endings, collapse blank lines, rewrite links.
 
-### Sphinx mode
+<p align="center">◇ ◇ ◇ ◇ ◇</p>
+
+### ⌬ Sphinx Mode
 
 ```mermaid
 flowchart TD
@@ -167,26 +222,54 @@ flowchart TD
     I --> H
 ```
 
-The default builder is `markdown` (`sphinx-markdown-builder`), which renders the
-doctree straight to Markdown — no HTML round-trip, so there is no chrome to strip
-and no HTML-specific post-processing, only the shared deterministic cleanup. Pass
-`--builder html` to use the legacy `rst → HTML → Markdown` pipeline (needed when a
-project's extensions are incompatible with the Markdown builder). Both builders
-share the same `(success, errors, skipped)` contract and the same
-skip/cache/parallel/report features.
+The default builder is `markdown` (`sphinx-markdown-builder`), which renders
+the doctree straight to Markdown — no HTML round-trip, so there is no chrome
+to strip and no HTML-specific post-processing, only the shared deterministic
+cleanup. Pass `--builder html` to use the legacy `rst → HTML → Markdown`
+pipeline (needed when a project's extensions are incompatible with the
+Markdown builder). Both builders share the same `(success, errors, skipped)`
+contract and the same skip/cache/parallel/report features.
 
 In lightweight mode the tool:
 
-- injects a `sitecustomize.py` (via `PYTHONPATH`) that stubs any top-level
+- ▸ injects a `sitecustomize.py` (via `PYTHONPATH`) that stubs any top-level
   module imported by `conf.py` but not installed;
-- sets `autodoc_mock_imports` to those same modules so `automodule` renders
+- ▸ sets `autodoc_mock_imports` to those same modules so `automodule` renders
   without the real package;
-- disables plot/gallery/ipython extensions and overrides `extensions` with a
-  safe, filtered set.
+- ▸ disables plot/gallery/ipython extensions and overrides `extensions` with a
+  safe, filtered set;
+- ▸ makes Sphinx's `napoleon` extension exception-safe, so members that raise
+  on attribute access (e.g. some pydantic models) are skipped instead of
+  crashing the build.
 
-## Project Structure
+> [!IMPORTANT]
+> **Autodoc content is preserved.** The documentation body is extracted from
+> the page's content container (`<main>` / `<article>`) *before* conversion,
+> so `autoclass` / `autofunction` output is kept intact — class signatures,
+> the `Bases:` inheritance list, members (`:members:`, `:special-members:`,
+> `:undoc-members:`), and the `Parameters:` / `Raises:` / `Returns:` field
+> lists. Signature parameters are emitted as code spans (e.g. `` `**kwargs` ``)
+> rather than being mangled by Markdown emphasis. Cross-reference links (base
+> classes, methods) are rewritten from `.html` to `.md`.
 
-```
+There is one trade-off to be aware of when relying on mocked imports:
+
+> [!WARNING]
+> **Inheritance requires the documented package.** In lightweight mode a
+> missing package is mocked so the build can succeed, but a *mocked* package
+> has no real class hierarchy, so `:show-inheritance:` yields an empty
+> `Bases:` line. To keep the inheritance list, install the package you are
+> documenting (e.g. `pip install aiogram`) — the converter never mocks a
+> package that is actually importable, so autodoc then resolves the real
+> `Bases:` and member signatures.
+
+<p align="right"><a href="#readme-top">⟔ ▲ ⟓ back to top</a></p>
+
+<p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
+
+## ❯ Project Structure
+
+```text
 rst-to-md/
 ├── rst_to_md/
 │   ├── __init__.py          # Public API + version (single source of truth)
@@ -218,7 +301,11 @@ rst-to-md/
 └── CHANGELOG.md
 ```
 
-## Development
+<p align="right"><a href="#readme-top">⟔ ▲ ⟓ back to top</a></p>
+
+<p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
+
+## ❯ Development
 
 ```bash
 make lint      # ruff
@@ -226,6 +313,43 @@ make type      # mypy
 make test      # pytest with coverage
 ```
 
-## License
+<p align="right"><a href="#readme-top">⟔ ▲ ⟓ back to top</a></p>
 
-MIT — see [LICENSE](LICENSE).
+<p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
+
+## ❯ Contributing
+
+Contributions are welcome. The short version:
+
+1. Fork the repo and create a branch.
+2. Add a test for every behavior change.
+3. Make sure `make lint type test` passes.
+4. Update [`CHANGELOG.md`](CHANGELOG.md) under the Unreleased section.
+5. Open a Pull Request describing the motivation and the change.
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full development setup and
+guidelines.
+
+<p align="right"><a href="#readme-top">⟔ ▲ ⟓ back to top</a></p>
+
+<p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
+
+## ❯ License
+
+Distributed under the MIT License. See [`LICENSE`](LICENSE) for more
+information.
+
+<p align="right"><a href="#readme-top">⟔ ▲ ⟓ back to top</a></p>
+
+<!-- ===================== BADGE DEFINITIONS (reference-style) ===================== -->
+
+[python-shield]: https://img.shields.io/badge/Python-3.10%2B-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54
+[python-url]: https://www.python.org/
+[version-shield]: https://img.shields.io/badge/version-1.4.3-informational?style=for-the-badge
+[version-url]: CHANGELOG.md
+[ci-shield]: https://img.shields.io/github/actions/workflow/status/wildminder/rst-to-md/ci.yml?style=for-the-badge
+[ci-url]: https://github.com/wildminder/rst-to-md/actions/workflows/ci.yml
+[license-shield]: https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge
+[license-url]: LICENSE
+[ruff-shield]: https://img.shields.io/badge/code%20style-ruff-000000?style=for-the-badge
+[ruff-url]: https://github.com/astral-sh/ruff
