@@ -1,16 +1,14 @@
 <div id="readme-top"></div>
-
+<div align="center">
 # RST to Markdown Converter
 
-A command-line tool to convert reStructuredText (`.rst`) files and full Sphinx
-documentation projects to clean Markdown (`.md`) — without installing the
-documented package or heavy Sphinx extensions.
+A command-line tool to convert reStructuredText (`.rst`) files and full Sphinx documentation projects to clean Markdown (`.md`) — without installing the documented package or heavy Sphinx extensions.
 
 [![Python][python-shield]][python-url]
 [![Version][version-shield]][version-url]
-[![CI][ci-shield]][ci-url]
 [![License: MIT][license-shield]][license-url]
 [![Code style: ruff][ruff-shield]][ruff-url]
+</div>
 
 <p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
 
@@ -46,7 +44,7 @@ Markdown. In Sphinx mode it builds the doctree with a **vendored, patched**
 navigation — so you get the documentation body only, with autodoc signatures,
 field lists, and `.md` cross-references intact.
 
-<p align="right"><a href="#readme-top">⟔ ▲ ⟓ back to top</a></p>
+<p align="right"><a href="#readme-top">⟔ ▲ ⟓</a></p>
 
 <p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
 
@@ -85,7 +83,7 @@ field lists, and `.md` cross-references intact.
 > available for very large projects. Conversion speed depends on the size of
 > the generated HTML, not a Rust core.
 
-<p align="right"><a href="#readme-top">⟔ ▲ ⟓ back to top</a></p>
+<p align="right"><a href="#readme-top">⟔ ▲ ⟓</a></p>
 
 <p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
 
@@ -116,7 +114,7 @@ pip install -e .          # runtime only
 Runtime dependencies: `pypandoc` (+ `pypandoc-binary`), `sphinx`,
 `html-to-markdown`, and `beautifulsoup4`.
 
-<p align="right"><a href="#readme-top">⟔ ▲ ⟓ back to top</a></p>
+<p align="right"><a href="#readme-top">⟔ ▲ ⟓</a></p>
 
 <p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
 
@@ -143,7 +141,7 @@ python -m rst_to_md docs md_docs --verbose
 > page" links, footer navigation, copyright line, "On this page" TOC, and `¶`
 > heading permalinks. Pass `--keep-chrome` to preserve all of it.
 
-<p align="right"><a href="#readme-top">⟔ ▲ ⟓ back to top</a></p>
+<p align="right"><a href="#readme-top">⟔ ▲ ⟓</a></p>
 
 <p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
 
@@ -187,7 +185,7 @@ usage: rst-to-md [-h] [-w {none,auto,preserve}]
 > not expose format/wrap knobs; `--format` and `--wrap` only affect simple
 > (pypandoc) mode.
 
-<p align="right"><a href="#readme-top">⟔ ▲ ⟓ back to top</a></p>
+<p align="right"><a href="#readme-top">⟔ ▲ ⟓</a></p>
 
 <p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
 
@@ -263,7 +261,7 @@ There is one trade-off to be aware of when relying on mocked imports:
 > package that is actually importable, so autodoc then resolves the real
 > `Bases:` and member signatures.
 
-<p align="right"><a href="#readme-top">⟔ ▲ ⟓ back to top</a></p>
+<p align="right"><a href="#readme-top">⟔ ▲ ⟓</a></p>
 
 <p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
 
@@ -301,7 +299,7 @@ rst-to-md/
 └── CHANGELOG.md
 ```
 
-<p align="right"><a href="#readme-top">⟔ ▲ ⟓ back to top</a></p>
+<p align="right"><a href="#readme-top">⟔ ▲ ⟓</a></p>
 
 <p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
 
@@ -313,33 +311,7 @@ make type      # mypy
 make test      # pytest with coverage
 ```
 
-<p align="right"><a href="#readme-top">⟔ ▲ ⟓ back to top</a></p>
-
-<p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
-
-## ❯ Contributing
-
-Contributions are welcome. The short version:
-
-1. Fork the repo and create a branch.
-2. Add a test for every behavior change.
-3. Make sure `make lint type test` passes.
-4. Update [`CHANGELOG.md`](CHANGELOG.md) under the Unreleased section.
-5. Open a Pull Request describing the motivation and the change.
-
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full development setup and
-guidelines.
-
-<p align="right"><a href="#readme-top">⟔ ▲ ⟓ back to top</a></p>
-
-<p align="center">╌╌╌╌╌╌╌ ❖ ╌╌╌╌╌╌╌╌</p>
-
-## ❯ License
-
-Distributed under the MIT License. See [`LICENSE`](LICENSE) for more
-information.
-
-<p align="right"><a href="#readme-top">⟔ ▲ ⟓ back to top</a></p>
+<p align="right"><a href="#readme-top">⟔ ▲ ⟓</a></p>
 
 <!-- ===================== BADGE DEFINITIONS (reference-style) ===================== -->
 
